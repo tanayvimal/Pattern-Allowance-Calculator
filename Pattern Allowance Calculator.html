@@ -1,0 +1,1721 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pattern Allowance Calculator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add("js");</script>
+<style>
+  /* Layout: full-width bands on a 1200px column. Hero pairs the thesis with the working calculator, a dark band carries the worked
+     example, and every section reads from the same calculator state. Sharp 2px corners, hairline rules, one orange accent. */
+  :root{
+    --ground:#FFFFFF; --surface:#FFFFFF; --surface-2:#F0F0F0; --rule:#BDBDBD;
+    --ink:#000000; --ink-dim:#4A4A4A;
+    --accent:#000000; --accent-ink:#000000; --accent-soft:rgba(0,0,0,.07); --on-accent:#FFFFFF;
+    --teal:#444444; --blue:#8C8C8C; --loss:#666666; --grid:rgba(0,0,0,.06);
+    --s1:#000000; --s2:#555555; --s3:#999999; --s4:#D0D0D0;
+    --display:'Archivo','Arial Narrow',system-ui,sans-serif;
+    --body:'Source Sans 3',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#000000; --surface:#0A0A0A; --surface-2:#161616; --rule:#333333;
+      --ink:#FFFFFF; --ink-dim:#A6A6A6;
+      --accent:#FFFFFF; --accent-ink:#FFFFFF; --accent-soft:rgba(255,255,255,.12); --on-accent:#000000;
+      --teal:#BDBDBD; --blue:#8A8A8A; --loss:#A6A6A6; --grid:rgba(255,255,255,.05);
+      --s1:#FFFFFF; --s2:#BDBDBD; --s3:#808080; --s4:#444444;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#000000; --surface:#0A0A0A; --surface-2:#161616; --rule:#333333;
+    --ink:#FFFFFF; --ink-dim:#A6A6A6;
+    --accent:#FFFFFF; --accent-ink:#FFFFFF; --accent-soft:rgba(255,255,255,.12); --on-accent:#000000;
+    --teal:#BDBDBD; --blue:#8A8A8A; --loss:#A6A6A6; --grid:rgba(255,255,255,.05);
+      --s1:#FFFFFF; --s2:#BDBDBD; --s3:#808080; --s4:#444444;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{background:var(--ground); color:var(--ink); font-family:var(--body); font-size:17px; line-height:1.55; -webkit-font-smoothing:antialiased;}
+  body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); background:var(--ground); z-index:60;}
+  ::selection{background:var(--accent-soft); color:var(--accent-ink);}
+  a{color:inherit;}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
+  h1,h2,h3,h4{font-family:var(--display); text-wrap:balance; margin:0;}
+  p{margin:0;}
+
+  .wrap{max-width:1200px; margin:0 auto; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));}
+  .page{max-width:1200px; margin:0 auto; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));}
+  .sec{max-width:1200px; margin:0 auto; padding-block:88px;
+    padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));}
+  .sec + .sec{border-top:1px solid var(--rule);}
+  .sec > *, .wrap > *{min-width:0;}
+  .kicker{display:flex; align-items:center; gap:10px; font-family:var(--display); font-weight:600; font-size:12.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent-ink); margin:0 0 14px;}
+  .kicker::before{content:""; width:9px; height:9px; background:var(--accent); flex:0 0 auto;}
+  h2{font-weight:700; font-size:clamp(28px,3.9vw,44px); line-height:1.05; letter-spacing:-.015em; margin-bottom:16px;}
+  .lead{color:var(--ink-dim); font-size:clamp(17px,1.8vw,19px); line-height:1.6; max-width:64ch;}
+  .sec-head{margin-bottom:44px;}
+  .fine{font-size:14px; color:var(--ink-dim); margin:20px 0 0; max-width:72ch;}
+
+  /* ---------- Top bar ---------- */
+  .top{position:sticky; top:env(safe-area-inset-top,0px); z-index:50; background:var(--surface); border-bottom:1px solid var(--rule);}
+  .top-in{max-width:1200px; margin:0 auto; display:flex; align-items:center; gap:18px; padding-block:9px;
+    padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));}
+  .brand{display:flex; align-items:center; gap:10px; font-family:var(--display); font-weight:800; font-size:16px; letter-spacing:-.01em; text-decoration:none; white-space:nowrap;}
+  .brand svg{width:24px; height:24px; stroke:var(--accent); fill:none; stroke-width:1.8; stroke-linecap:square;}
+  .top nav{display:flex; gap:2px; overflow-x:auto; scrollbar-width:none; min-width:0; flex:1;}
+  .top nav::-webkit-scrollbar{display:none;}
+  .top nav a{font-family:var(--display); font-weight:600; font-size:14px; text-decoration:none; color:var(--ink-dim); padding:10px 12px; white-space:nowrap; transition:color .2s;}
+  .top nav a:hover{color:var(--ink);}
+  .top nav a.active{color:var(--ink); box-shadow:inset 0 -3px 0 var(--accent);}
+  .tbtn{font-family:var(--display); font-weight:600; font-size:13px; letter-spacing:.04em; color:var(--ink); background:transparent; border:1px solid var(--rule); padding:8px 12px; cursor:pointer; flex:0 0 auto;}
+  .tbtn:hover{border-color:var(--ink);}
+  .progress{position:absolute; left:0; right:0; bottom:-1px; height:3px; pointer-events:none;}
+  .progress i{display:block; height:100%; background:var(--accent); transform-origin:0 50%; transform:scaleX(0);}
+  @media (max-width:700px){ .brand span{display:none;} }
+
+  /* ---------- Hero ---------- */
+  .hero-band{position:relative; border-bottom:1px solid var(--rule); background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px); background-size:44px 44px; background-position:-1px -1px;}
+  .hero-band::after{content:""; position:absolute; left:0; right:0; bottom:0; height:140px; background:linear-gradient(to bottom,transparent,var(--ground)); pointer-events:none;}
+  .hero{position:relative; z-index:1; display:grid; grid-template-columns:minmax(0,1fr); gap:48px; padding-block:56px 80px; align-items:start;}
+  @media (min-width:940px){ .hero{grid-template-columns:minmax(0,1fr) 420px; gap:72px; padding-block:76px 96px;} }
+  h1{font-weight:800; font-size:clamp(40px,6.6vw,78px); line-height:.98; letter-spacing:-.025em; margin:0 0 22px;}
+  .readout{display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px 24px; margin:36px 0 10px; padding:22px 0 0; border-top:2px solid var(--ink);}
+  .r-block{display:flex; flex-direction:column; gap:2px; min-width:0;}
+  .r-label{font-family:var(--display); font-weight:600; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-dim);}
+  .r-val{font-family:var(--mono); font-weight:600; font-variant-numeric:tabular-nums; display:flex; align-items:baseline; gap:6px;}
+  .r-val .n{font-size:clamp(24px,3.6vw,32px); color:var(--ink);}
+  .r-val.big .n{font-size:clamp(42px,7vw,68px); line-height:1; color:var(--accent-ink);}
+  .r-val .u{font-size:14px; color:var(--ink-dim); font-weight:500;}
+  .r-arrow{font-size:26px; color:var(--ink-dim); align-self:center; padding-bottom:6px;}
+  .r-delta{font-family:var(--mono); font-size:14px; color:var(--accent-ink); font-variant-numeric:tabular-nums; font-weight:600;}
+  .hero-meta-line{font-family:var(--mono); font-size:12.5px; color:var(--ink-dim); margin:6px 0 0;}
+  .comp-title{font-family:var(--display); font-weight:600; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-dim); margin:26px 0 8px;}
+  .comp{display:flex; height:12px; gap:2px; background:transparent;}
+  .comp span{height:100%; min-width:0; transition:width .5s cubic-bezier(.2,.8,.2,1);}
+  .legend{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px 18px; margin-top:12px;}
+  .lg{display:flex; align-items:baseline; gap:8px; font-size:14px; color:var(--ink-dim); min-width:0;}
+  .lg i{width:10px; height:10px; flex:0 0 auto; align-self:center;}
+  .lg b{font-family:var(--mono); font-weight:600; color:var(--ink); font-size:13px; margin-left:auto; font-variant-numeric:tabular-nums;}
+  .actions{display:flex; flex-wrap:wrap; gap:10px; margin-top:28px;}
+  .hint{color:var(--ink-dim); font-size:15px; max-width:54ch; margin-top:20px;}
+  .hero-demo{min-width:0; display:flex; justify-content:center;}
+
+  /* ---------- Buttons ---------- */
+  .btn{font-family:var(--display); font-weight:700; font-size:14px; letter-spacing:.02em; background:var(--accent); color:var(--on-accent); border:1px solid var(--accent); border-radius:2px; padding:11px 18px; cursor:pointer; transition:transform .15s, filter .15s;}
+  .btn:hover{filter:brightness(1.08); transform:translateY(-1px);}
+  .btn.ghost{background:transparent; color:var(--ink); border-color:var(--ink);}
+  .btn.ghost:hover{background:var(--ink); color:var(--ground); filter:none;}
+
+  /* ---------- Worked example (dark band) ---------- */
+  .band-dark{--ink:#FFFFFF; --ink-dim:#A6A6A6; --rule:#333333; --surface:#0D0D0D; --surface-2:#1A1A1A;
+    --accent:#FFFFFF; --accent-ink:#FFFFFF; --accent-soft:rgba(255,255,255,.14); --on-accent:#000000; --teal:#BDBDBD; --loss:#A6A6A6;
+    background:#000000; color:var(--ink); border-block:1px solid #2A2A2A; color-scheme:dark;}
+  .band-dark .lead{color:var(--ink-dim);}
+  .case{display:grid; grid-template-columns:minmax(0,1fr); gap:48px; padding-block:96px;}
+  @media (min-width:980px){ .case{grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:72px;} }
+  .facts{margin:26px 0 0; border-top:1px solid var(--rule);}
+  .facts .row{display:flex; justify-content:space-between; gap:16px; padding:11px 0; border-bottom:1px solid var(--rule); font-size:15px;}
+  .facts dt{color:var(--ink-dim); margin:0;}
+  .facts dd{margin:0; font-family:var(--mono); font-weight:600; font-size:13.5px; text-align:right;}
+  .band-dark .actions{margin-top:26px;}
+  .band-dark .btn.ghost{color:var(--ink); border-color:var(--ink);}
+  .band-dark .btn.ghost:hover{background:var(--ink); color:#000000;}
+  .cmp-box{background:var(--surface); border:1px solid var(--rule); padding:26px 26px 28px; min-width:0;}
+  .cmp-top{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px 20px; margin-bottom:18px;}
+  .cmp-top h3{font-weight:700; font-size:20px;}
+  .hseg{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-dim);}
+  .hseg button{font-family:var(--mono); font-weight:600; font-size:12.5px; background:transparent; color:var(--ink-dim); border:1px solid var(--rule); padding:6px 10px; cursor:pointer;}
+  .hseg button[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent);}
+  .cmp-scroll{overflow-x:auto;}
+  table.cmp{width:100%; min-width:430px; border-collapse:collapse; font-size:15px;}
+  .cmp th,.cmp td{padding:11px 10px; border-bottom:1px solid var(--rule); text-align:right; font-variant-numeric:tabular-nums;}
+  .cmp th:first-child,.cmp td:first-child{text-align:left; padding-left:0;}
+  .cmp thead th{font-family:var(--display); font-weight:600; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-dim);}
+  .cmp tbody th{font-weight:400; color:var(--ink);}
+  .cmp td{font-family:var(--mono); font-weight:600; font-size:14px;}
+  .cmp td.na{color:var(--ink-dim); font-weight:500;}
+  .cmp tr.total th,.cmp tr.total td{border-bottom:none; border-top:2px solid var(--ink-dim); padding-top:14px;}
+  .cmp tr.total td{font-size:18px;}
+  .cmp tr.total td:last-child{color:var(--accent-ink);}
+  .gapbars{margin-top:22px; display:flex; flex-direction:column; gap:10px;}
+  .gb{display:grid; grid-template-columns:96px minmax(0,1fr) 84px; gap:12px; align-items:center; font-size:13px;}
+  .gb span:first-child{color:var(--ink-dim); font-family:var(--display); font-weight:600; letter-spacing:.06em; text-transform:uppercase; font-size:11.5px;}
+  .gb .tr{height:14px; background:var(--surface-2); position:relative;}
+  .gb .tr i{position:absolute; left:0; top:0; bottom:0; background:var(--ink-dim); transition:width .5s cubic-bezier(.2,.8,.2,1);}
+  .gb.calc-row .tr i{background:var(--accent);}
+  .gb b{font-family:var(--mono); font-weight:600; font-size:13px; text-align:right;}
+  .gb-note{font-size:12.5px; color:var(--ink-dim); margin-top:2px;}
+  .verdict{margin-top:22px; border:1px solid var(--loss); background:rgba(255,255,255,.07); padding:16px 18px; font-size:15.5px; line-height:1.5;}
+  .verdict strong{color:var(--loss); font-family:var(--display); font-weight:700; font-size:17px; display:block; margin-bottom:2px;}
+  .verdict.ok{border-color:var(--teal); background:rgba(255,255,255,.05);}
+  .verdict.ok strong{color:var(--teal);}
+
+  /* ---------- Modal + toast ---------- */
+  .modal{position:fixed; inset:0; z-index:70; display:grid; place-items:center; padding:16px;}
+  .modal[hidden]{display:none !important;}
+  .m-back{position:absolute; inset:0; background:rgba(6,12,20,.6); opacity:0; transition:opacity .25s;}
+  .m-panel{position:relative; width:100%; max-width:580px; max-height:calc(100% - 8px); overflow:auto; background:var(--surface); border:1px solid var(--rule); border-top:4px solid var(--accent); padding:30px 30px 28px;
+    opacity:0; transform:translateY(18px) scale(.97); transition:opacity .28s, transform .32s cubic-bezier(.2,.8,.2,1); box-shadow:0 24px 60px rgba(0,0,0,.28);}
+  .modal.open .m-back{opacity:1;}
+  .modal.open .m-panel{opacity:1; transform:none;}
+  .m-close{position:absolute; top:10px; right:10px; width:36px; height:36px; background:transparent; border:1px solid var(--rule); color:var(--ink); font-size:18px; cursor:pointer; line-height:1;}
+  .m-close:hover{border-color:var(--ink);}
+  .m-group{font-family:var(--display); font-weight:600; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--teal); margin-bottom:8px;}
+  .m-panel h3{font-weight:800; font-size:30px; letter-spacing:-.015em; margin:0 40px 14px 0;}
+  .m-live{display:flex; align-items:baseline; justify-content:space-between; gap:14px; border-block:1px solid var(--rule); padding:14px 0; margin-bottom:18px;}
+  .m-live span{color:var(--ink-dim); font-size:14px;}
+  .m-live b{font-family:var(--mono); font-weight:600; font-size:22px; color:var(--accent-ink); font-variant-numeric:tabular-nums; text-align:right;}
+  .m-panel p{color:var(--ink-dim); margin-bottom:14px;}
+  .m-panel code{display:block; font-family:var(--mono); font-size:13px; color:var(--accent-ink); background:var(--surface-2); padding:10px 12px; overflow-wrap:anywhere;}
+  .toast{position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0px)); z-index:80; transform:translate(-50%,20px); opacity:0; pointer-events:none;
+    background:var(--ink); color:var(--ground); font-family:var(--display); font-weight:600; font-size:14px; padding:12px 18px; transition:opacity .25s, transform .3s cubic-bezier(.2,.8,.2,1); max-width:calc(100% - 32px);}
+  .toast.show{opacity:1; transform:translate(-50%,0);}
+
+  /* ---------- Scroll reveal ---------- */
+  .js .rv{transition:opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); transition-delay:var(--d,0s);}
+  .js .rv:not(.in){opacity:.3; transform:translateY(28px) scale(.985);}
+
+  /* ====================================================================
+     Calculator (device frame). Always dark, as in the original design.
+     ==================================================================== */
+  .calc{
+    --bg:#000000; --panel:#0D0D0D; --panel-2:#1A1A1A; --line:#333333;
+    --text:#FFFFFF; --text-dim:#9A9A9A;
+    --molten:#FFFFFF; --molten-soft:rgba(255,255,255,0.10); --molten-light:#FFFFFF;
+    --patina:#BDBDBD; --neg:#8C8C8C;
+    --r-sm:4px; --r-md:8px; --r-pill:999px;
+    color-scheme:dark;
+    position:relative; width:100%; max-width:420px; height:700px; overflow:hidden; isolation:isolate;
+    border:1px solid var(--rule); border-radius:28px;
+    background:radial-gradient(720px 320px at 50% -80px, rgba(255,255,255,0.10), transparent 65%), var(--bg);
+    color:var(--text); font-family:'Barlow',system-ui,sans-serif; font-size:16px; line-height:1.4;
+  }
+  .calc *{box-sizing:border-box;}
+  .calc button{font-family:inherit;}
+  .calc .screen{position:absolute; inset:0; overflow-y:auto; padding:20px 14px 112px; scrollbar-width:thin;}
+
+  .calc .c-head{margin-bottom:16px; animation:rise .6s cubic-bezier(.2,.7,.3,1) both;}
+  @keyframes rise{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+  .calc .eyebrow{font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:12px; letter-spacing:.10em; color:var(--patina); margin-bottom:4px;}
+  .calc .c-title{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:30px; line-height:1.05; margin:0 0 6px; color:var(--text);}
+  .calc .sub{color:var(--text-dim); font-size:13.5px; line-height:1.5; margin:0;}
+
+  .calc .rail-label{font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:13px; color:var(--text-dim); margin:20px 0 8px;}
+  .calc .rail-outer{position:relative;}
+  .calc .rail{position:relative; display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; padding:4px 2px 10px;}
+  .calc .rail::-webkit-scrollbar{display:none;}
+  .calc .rail-indicator{
+    position:absolute; top:4px; height:38px; background:var(--molten); border-radius:var(--r-pill);
+    transition:left .32s cubic-bezier(.2,.8,.2,1), width .32s cubic-bezier(.2,.8,.2,1); z-index:0;
+  }
+  .calc .chip{
+    position:relative; z-index:1; flex:0 0 auto; font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:14.5px;
+    color:var(--text-dim); background:transparent; border:1px solid var(--line); padding:8px 16px; border-radius:var(--r-pill);
+    cursor:pointer; transition:color .25s ease, border-color .25s ease; white-space:nowrap;
+  }
+  .calc .chip.active{color:#000000; border-color:transparent;}
+  .calc .process-note{font-size:12.5px; color:var(--text-dim); line-height:1.5; margin:2px 0 14px; min-height:38px;}
+
+  .calc .panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--r-md); padding:14px 14px 16px; margin-bottom:14px;}
+  .calc .panel-title{font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:15px; color:var(--text); margin:0 0 12px;}
+  .calc label{display:block; font-size:12px; color:var(--text-dim); margin:12px 0 5px;}
+  .calc label:first-of-type{margin-top:0;}
+  .calc select,.calc input[type=number],.calc input[type=text]{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    font-family:'Barlow',sans-serif; font-size:14.5px; padding:10px 11px; border-radius:var(--r-sm); appearance:none; -webkit-appearance:none;
+  }
+  .calc .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .calc .picker-btn{
+    width:100%; display:flex; justify-content:space-between; align-items:center; gap:10px;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text); font-size:14.5px; padding:11px 12px; border-radius:var(--r-sm); cursor:pointer; text-align:left;
+  }
+  .calc .picker-btn .val{color:var(--text); min-width:0;}
+  .calc .picker-btn .shrink-tag{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--patina); white-space:nowrap;}
+  .calc .seg{display:flex; gap:8px;}
+  .calc .seg button{
+    flex:1; background:var(--panel-2); border:1px solid var(--line); color:var(--text-dim); font-size:13.5px; padding:9px 6px;
+    border-radius:var(--r-sm); cursor:pointer; transition:.2s ease;
+  }
+  .calc .seg button.active{background:var(--molten-soft); border-color:var(--molten); color:var(--molten-light); font-weight:600;}
+
+  .calc .chain-title{font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:15px; color:var(--text); margin:0 0 4px;}
+  .calc .chain-sub{font-size:12px; color:var(--text-dim); margin-bottom:12px;}
+  .calc .chain{display:flex; align-items:stretch; gap:0; overflow-x:auto; scrollbar-width:none; padding-bottom:4px;}
+  .calc .chain::-webkit-scrollbar{display:none;}
+  .calc .chain-node{flex:0 0 auto; min-width:84px; text-align:center; padding:10px 6px; border-right:1px dashed var(--line);}
+  .calc .chain-node:last-child{border-right:none;}
+  .calc .chain-node .k{font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em;}
+  .calc .chain-node .v{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:16px; color:var(--text); margin-top:4px; font-variant-numeric:tabular-nums;}
+  .calc .chain-node.neg .v{color:var(--neg);}
+  .calc .chain-node.final{background:var(--molten-soft); border-radius:var(--r-md);}
+  .calc .chain-node.final .v{color:var(--molten-light); font-size:18px;}
+  .calc .chain-arrow{align-self:center; color:var(--text-dim); padding:0 2px; font-size:14px;}
+
+  .calc .aux-header{display:flex; justify-content:space-between; align-items:baseline; margin:22px 0 8px;}
+  .calc .aux-count{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--patina);}
+  .calc .aux-list{display:flex; flex-direction:column; gap:8px;}
+  .calc .aux-item{background:var(--panel); border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden; animation:slideIn .38s cubic-bezier(.2,.8,.2,1) both;}
+  @keyframes slideIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+  .calc .aux-head{width:100%; display:flex; align-items:center; gap:10px; background:transparent; border:none; padding:12px 14px; cursor:pointer; text-align:left; color:var(--text);}
+  .calc .aux-icon{width:30px; height:30px; border-radius:var(--r-sm); background:var(--panel-2); display:flex; align-items:center; justify-content:center; color:var(--molten-light); font-size:15px; flex:0 0 auto;}
+  .calc .aux-name{font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:15px; color:var(--text); flex:1;}
+  .calc .aux-val{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--text-dim);}
+  .calc .aux-caret{color:var(--text-dim); font-size:11px; transition:transform .3s ease; flex:0 0 auto;}
+  .calc .aux-item.open .aux-caret{transform:rotate(180deg);}
+  .calc .aux-body-wrap{display:grid; grid-template-rows:0fr; transition:grid-template-rows .35s cubic-bezier(.2,.8,.2,1);}
+  .calc .aux-item.open .aux-body-wrap{grid-template-rows:1fr;}
+  .calc .aux-body-inner{overflow:hidden; min-height:0;}
+  .calc .aux-body{padding:12px 14px 14px; border-top:1px solid var(--line);}
+  .calc .aux-result{background:var(--panel-2); border-radius:var(--r-sm); padding:10px 12px; margin-top:10px; font-size:12.5px; color:var(--text-dim); line-height:1.5;}
+  .calc .aux-result b{color:var(--molten-light); font-family:'IBM Plex Mono',monospace; font-weight:600;}
+  .calc .na-toggle{width:100%; text-align:left; background:var(--panel-2); border:1px dashed var(--line); color:var(--text-dim); font-size:12.5px; padding:10px 12px; border-radius:var(--r-md); margin-top:8px; cursor:pointer;}
+  .calc .na-detail{display:grid; grid-template-rows:0fr; transition:grid-template-rows .3s ease;}
+  .calc .na-detail.open{grid-template-rows:1fr;}
+  .calc .na-detail-inner{overflow:hidden; min-height:0;}
+  .calc .na-detail p{font-size:12px; color:var(--text-dim); line-height:1.6; padding:8px 2px 0; margin:0;}
+
+  .calc .dock{
+    position:absolute; left:0; right:0; bottom:0; z-index:20; background:var(--panel); border-top:1px solid var(--line);
+    box-shadow:0 -8px 24px rgba(0,0,0,.35);
+  }
+  .calc .dock-inner{padding:12px 16px; display:flex; align-items:center; gap:14px; cursor:pointer;}
+  .calc .dock-label{font-family:'Barlow Condensed',sans-serif; font-size:11.5px; color:var(--text-dim); letter-spacing:.04em;}
+  .calc .dock-value{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:26px; color:var(--molten-light); font-variant-numeric:tabular-nums;}
+  .calc .dock-value .unit{font-size:13px; color:var(--text-dim); font-weight:500;}
+  .calc .dock-bar{flex:1; height:8px; background:var(--panel-2); border-radius:var(--r-pill); overflow:hidden; display:flex;}
+  .calc .dock-bar span{height:100%; transition:width .5s cubic-bezier(.2,.8,.2,1);}
+  .calc .dock-chev{color:var(--text-dim); font-size:12px;}
+
+  .calc .backdrop{position:absolute; inset:0; background:rgba(10,12,15,.6); opacity:0; pointer-events:none; transition:opacity .3s ease; z-index:29;}
+  .calc .backdrop.open{opacity:1; pointer-events:auto;}
+  .calc .sheet{
+    position:absolute; left:0; right:0; bottom:0; z-index:30; background:var(--panel); border-top:1px solid var(--line);
+    border-radius:20px 20px 0 0; transform:translateY(102%); transition:transform .38s cubic-bezier(.2,.8,.2,1);
+    max-height:82%; display:flex; flex-direction:column; visibility:hidden;
+  }
+  .calc .sheet.open{transform:translateY(0); visibility:visible;}
+  .calc .sheet-handle{width:36px; height:4px; background:var(--line); border-radius:var(--r-pill); margin:10px auto; flex:0 0 auto;}
+  .calc .sheet-title{font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:17px; padding:0 18px 10px; border-bottom:1px solid var(--line); flex:0 0 auto;}
+  .calc .sheet-body{overflow-y:auto; padding:6px 10px 20px; min-height:0;}
+  .calc .mat-search-wrap{padding:2px 18px 10px; border-bottom:1px solid var(--line); flex:0 0 auto;}
+  .calc .mat-group-header{
+    font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:12px; color:var(--patina); text-transform:uppercase; letter-spacing:.04em;
+    padding:14px 10px 4px; position:sticky; top:0; background:var(--panel); z-index:1;
+  }
+  .calc .mat-group-header:first-child{padding-top:6px;}
+  .calc .mat-empty{padding:24px 10px; color:var(--text-dim); font-size:13.5px; text-align:center;}
+  .calc .mat-row{
+    width:100%; display:flex; justify-content:space-between; align-items:center; gap:10px; background:transparent; border:none; color:var(--text);
+    text-align:left; padding:12px 10px; border-radius:var(--r-sm); cursor:pointer; font-size:14.5px;
+  }
+  .calc .mat-row:hover,.calc .mat-row:focus-visible{background:var(--panel-2);}
+  .calc .mat-row.selected{color:var(--molten-light);}
+  .calc .mat-row .tag{font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--text-dim); white-space:nowrap;}
+  .calc .mat-row.selected .tag{color:var(--molten-light);}
+  .calc .breakdown-list{padding:6px 18px 18px;}
+  .calc .b-row{display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px dashed var(--line); font-size:13.5px;}
+  .calc .b-row:last-child{border-bottom:none;}
+  .calc .b-row .k{color:var(--text-dim);}
+  .calc .b-row .v{font-family:'IBM Plex Mono',monospace; color:var(--text); white-space:nowrap;}
+  .calc .b-section{font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:13px; color:var(--patina); margin:16px 18px 2px; text-transform:uppercase; letter-spacing:.05em;}
+  .calc :focus-visible{outline-color:var(--molten-light);}
+
+
+  /* ---------- Overrides for the reused sections ---------- */
+  .tablewrap,.mtab{border-radius:2px;}
+  .btn{border-radius:2px;}
+  .note-box .btn{padding:11px 18px;}
+  .mrow{border-radius:2px;}
+  .calc{border-radius:20px;}
+  .calc .sheet{border-radius:16px 16px 0 0;}
+  .calc{box-shadow:0 30px 70px -20px rgba(12,26,44,.45);}
+
+  /* ---------- Black and white, square corners ---------- */
+  *,*::before,*::after{border-radius:0 !important;}
+  table{color:inherit; font-size:inherit;}
+  .calc{border:1px solid var(--ink); box-shadow:10px 10px 0 var(--rule);}
+  .fill{background:var(--blue);}
+  .mrow.active .fill{background:var(--accent);}
+  .verdict,.verdict.ok{border:2px solid var(--ink);}
+  .verdict.ok{border-style:dashed;}
+  .verdict strong{color:var(--ink);}
+  .band-dark .gb.calc-row .tr i{background:#FFFFFF;}
+  .est-out,.m-panel{border-top-width:6px;}
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *,*::before,*::after{animation-duration:.001ms !important; transition-duration:.001ms !important;}
+    .js .rv:not(.in){opacity:1; transform:none;}
+  }
+
+  /* ---------- Simplified layout ---------- */
+  .hero-band{background:none; border-bottom:1px solid var(--rule);}
+  .hero-band::after{display:none;}
+  .hero{padding-block:56px 96px; gap:56px; align-items:center;}
+  @media (min-width:940px){ .hero{grid-template-columns:minmax(0,1fr) 480px; gap:96px; padding-block:80px 112px;} }
+  h1{font-size:clamp(38px,5.4vw,64px); line-height:1; margin-bottom:20px;}
+  .readout{margin:40px 0 10px;}
+  .hero .actions{margin-top:30px;}
+  .hero-demo{flex-direction:column; align-items:stretch; gap:14px;}
+  .demo-tag{display:flex; align-items:center; gap:10px; font-family:var(--display); font-weight:700; font-size:12.5px; letter-spacing:.14em; text-transform:uppercase; margin:0;}
+  .demo-tag::before{content:""; width:9px; height:9px; background:var(--ink);}
+  .calc{max-width:480px; width:100%; height:760px; margin-inline:auto; border:2px solid var(--ink); box-shadow:14px 14px 0 var(--rule);}
+  @media (max-width:520px){ .calc{height:700px; box-shadow:8px 8px 0 var(--rule);} }
+
+  .ben3{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:48px 64px;}
+  .ben3 > div{border-top:2px solid var(--ink); padding-top:22px;}
+  .ben3 h3{font-weight:700; font-size:24px; letter-spacing:-.01em; margin-bottom:10px;}
+  .ben3 p{color:var(--ink-dim); max-width:36ch;}
+
+  .steps{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:1px; background:var(--rule); border:1px solid var(--ink);}
+  .step{background:var(--surface); padding:24px 18px; min-width:0;}
+  .step span{display:block; font-family:var(--display); font-weight:600; font-size:12px; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:10px;}
+  .step b{display:block; font-family:var(--mono); font-weight:600; font-size:clamp(17px,2.2vw,24px); font-variant-numeric:tabular-nums; overflow-wrap:anywhere;}
+  .step.off b{color:var(--ink-dim); font-weight:500;}
+  .step.final{background:var(--ink);}
+  .step.final span{color:var(--ground); opacity:.7;}
+  .step.final b{color:var(--ground);}
+  @media (max-width:860px){ .steps{grid-template-columns:repeat(2,minmax(0,1fr));} }
+
+  .band-dark .case{padding-block:104px;}
+  .cmp-box{padding:28px;}
+  .foot{border-top:1px solid var(--rule); padding-block:36px 56px; color:var(--ink-dim); font-size:14px;}
+  .foot p{max-width:76ch;}
+  .sec{padding-block:104px;}
+</style>
+
+<div id="top"></div>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="#top" aria-label="Pattern Allowance Calculator, back to top">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5v14M21 5v14M3 12h18M7 8.5L3 12l4 3.5M17 8.5L21 12l-4 3.5"/></svg>
+      <span>Pattern Allowance Calculator</span>
+    </a>
+    <nav aria-label="Sections" id="nav">
+      <a href="#calculator">Calculator</a>
+      <a href="#toolkit">Toolkit</a>
+      <a href="#evidence">Evidence</a>
+      <a href="#roi">ROI model</a>
+      <a href="#benefits">Benefits</a>
+      <a href="#example">Example</a>
+      <a href="#steps">How it adds up</a>
+      <a href="#sources">Sources</a>
+    </nav>
+    <button class="tbtn" id="themeBtn" type="button" aria-label="Switch colour theme">Dark</button>
+  </div>
+</header>
+
+<style>
+/* Pitch additions: larger calculator, evidence, ROI model */
+@media (min-width:1100px){.hero{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:64px}}
+.hero-demo{position:relative}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:0;border:1px solid var(--rule)}
+.stat{padding:26px 24px;border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:8px}
+.stat:last-child{border-right:0}
+.stat .big{font-family:var(--mono);font-weight:600;font-size:clamp(30px,4vw,42px);line-height:1;letter-spacing:-.02em}
+.stat .big small{font-size:.5em;color:var(--ink-dim);font-weight:500}
+.stat p{font-size:15px;color:var(--ink-dim);line-height:1.45}
+.stat cite{font-style:normal;font-family:var(--mono);font-size:12px;color:var(--ink-dim);border-top:1px solid var(--rule);padding-top:10px;margin-top:auto}
+.stat button{align-self:flex-start;font-family:var(--display);font-weight:600;font-size:12.5px;border:1px solid var(--rule);background:transparent;color:var(--ink);padding:6px 10px;cursor:pointer}
+.stat button:hover{border-color:var(--ink)}
+.caveat{margin-top:22px;padding:16px 18px;border-left:3px solid var(--accent);background:var(--surface-2);font-size:15px;color:var(--ink-dim);max-width:90ch}
+.caveat b{color:var(--ink)}
+.roi{display:grid;gap:32px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.roi{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:56px}}
+.roi-in{display:grid;gap:18px;align-content:start}
+.roi-in label{display:flex;flex-direction:column;gap:6px;font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim)}
+.roi-in label span.v{font-family:var(--mono);color:var(--ink);letter-spacing:0;text-transform:none;font-size:15px;float:right}
+.roi-in input[type=number],.roi-in select{font:inherit;font-family:var(--mono);font-size:16px;padding:10px 12px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);border-radius:2px;width:100%}
+.roi-in input[type=range]{width:100%;accent-color:var(--accent)}
+.roi-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.hint{font-family:var(--body);font-weight:400;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink-dim)}
+.roi-out{border:2px solid var(--ink);padding:28px;display:flex;flex-direction:column;gap:20px;background:var(--surface)}
+.roi-big{font-family:var(--mono);font-weight:600;font-size:clamp(38px,6vw,64px);line-height:1;letter-spacing:-.03em}
+.roi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:16px}
+.roi-grid div{border-top:1px solid var(--rule);padding-top:10px}
+.roi-grid b{display:block;font-family:var(--mono);font-size:20px;font-weight:600}
+.roi-grid span,.roi-lab{font-family:var(--display);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);font-weight:600}
+.bars{display:grid;gap:8px}
+.bar{height:30px;background:var(--surface-2);position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--s1);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.bar.after i{background:var(--s3)}
+.bar em{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-style:normal;font-family:var(--mono);font-size:13px;color:var(--on-accent);mix-blend-mode:normal;z-index:1}
+.bar.after em{color:var(--ink)}
+.refs{columns:2 340px;column-gap:48px;font-size:14px;color:var(--ink-dim);padding-left:20px}
+.refs li{margin-bottom:12px;break-inside:avoid}.refs a{color:var(--ink)}
+.ask{display:grid;gap:14px}.ask h2{max-width:20ch}
+.shrink-fig{max-width:920px}
+.a-heat{animation:aHeat 12s linear infinite}
+.a-fill,.a-sprue,.a-riser,.a-stream,.a-therm,.a-cast,.a-prog,.a-ladle,.a-cut{transform-box:fill-box}
+.a-sprue{transform-origin:50% 0;animation:aHeat 12s linear infinite,aSprue 12s linear infinite}
+.a-fill{transform-origin:50% 100%;animation:aHeat 12s linear infinite,aFill 12s linear infinite}
+.a-cast{transform-origin:50% 50%;animation:aCast 12s ease-in-out infinite}
+.a-riser{transform-origin:50% 100%;animation:aHeat 12s linear infinite,aRiser 12s linear infinite}
+.a-stream{transform-origin:50% 0;animation:aHeat 12s linear infinite,aStream 12s linear infinite}
+.a-therm{transform-origin:50% 100%;animation:aHeat 12s linear infinite,aTherm 12s linear infinite}
+.a-ladle{transform:translate(300px,14px);transform-origin:right top;animation:aLadle 12s ease-in-out infinite}
+.a-mold{animation:aMold 12s linear infinite}
+.a-pat{fill:none;stroke:var(--ink-dim);stroke-width:1.2;stroke-dasharray:6 5}
+.a-draw{fill:none;stroke:var(--ink);stroke-width:1.6;transform-box:fill-box;transform-origin:50% 50%;transform:scale(var(--k,.96));animation:aDraw 12s linear infinite}
+.a-cut{animation:aCut 12s linear infinite}
+.a-chip{fill:var(--ink);opacity:0;animation:aChip 12s linear infinite}
+.a-sandp{fill:var(--ink-dim);opacity:0;animation:aSand 12s linear infinite}
+.a-prog{fill:var(--ink);transform-origin:0 50%;animation:aProg 12s linear infinite}
+.a-t{opacity:0;font-size:13px}.t1{animation:aT1 12s infinite}.t2{animation:aT2 12s infinite}.t3{animation:aT3 12s infinite}.t4{animation:aT4 12s infinite}
+.ph4{animation:ph4 12s infinite}.ph1,.ph2,.ph3{animation-duration:12s}
+@keyframes aHeat{0%,30%{fill:#f08c00}50%{fill:#e8590c}68%,100%{fill:var(--s1)}}
+@keyframes aSprue{0%,5%{transform:scaleY(0)}13%,32%{transform:scaleY(1)}34%,100%{transform:scaleY(1)}}
+@keyframes aFill{0%,12%{transform:scaleY(0)}30%,100%{transform:scaleY(1)}}
+@keyframes aRiser{0%,16%{transform:scaleY(0)}32%,38%{transform:scaleY(1)}64%,100%{transform:scaleY(.35)}}
+@keyframes aStream{0%,4%{transform:scaleY(0);opacity:1}8%,24%{transform:scaleY(1);opacity:1}27%,100%{transform:scaleY(1);opacity:0}}
+@keyframes aTherm{0%,30%{transform:scaleY(1)}68%,100%{transform:scaleY(.04)}}
+@keyframes aLadle{0%{transform:translate(300px,14px) rotate(0);opacity:1}5%,25%{transform:translate(300px,14px) rotate(-32deg);opacity:1}30%{transform:translate(300px,14px) rotate(0);opacity:1}34%,100%{transform:translate(300px,14px) rotate(0);opacity:0}}
+@keyframes aCast{0%,38%{transform:scale(1)}64%,78%{transform:scale(var(--ks,.98))}94%,100%{transform:scale(var(--k,.96))}}
+@keyframes aMold{0%,66%{opacity:1}76%,100%{opacity:.06}}
+@keyframes aDraw{0%,76%{opacity:.25}82%,100%{opacity:1}}
+@keyframes aCut{0%,79%{opacity:0;transform:translateX(0)}80%{opacity:1;transform:translateX(0)}94%{opacity:1;transform:translateX(234px)}96%,100%{opacity:0;transform:translateX(234px)}}
+@keyframes aChip{0%,80%{opacity:0;transform:translate(0,0)}86%{opacity:1}94%,100%{opacity:0;transform:translate(var(--dx),-22px)}}
+@keyframes aSand{0%,67%{opacity:0;transform:translateY(0)}70%{opacity:1}80%,100%{opacity:0;transform:translateY(var(--d))}}
+@keyframes aProg{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+@keyframes aT1{0%,36%{opacity:1}38%,100%{opacity:0}}
+@keyframes aT2{0%,37%{opacity:0}39%,51%{opacity:1}53%,100%{opacity:0}}
+@keyframes aT3{0%,52%{opacity:0}54%,65%{opacity:1}67%,100%{opacity:0}}
+@keyframes aT4{0%,66%{opacity:0}68%,97%{opacity:1}100%{opacity:0}}
+@keyframes ph1{0%,35%{opacity:1}38%,100%{opacity:0}}
+@keyframes ph2{0%,37%{opacity:0}40%,64%{opacity:1}67%,100%{opacity:0}}
+@keyframes ph3{0%,66%{opacity:0}69%,77%{opacity:1}79%,100%{opacity:0}}
+@keyframes ph4{0%,78%{opacity:0}81%,96%{opacity:1}99%,100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.a-heat,.a-sprue,.a-fill,.a-riser,.a-stream,.a-therm,.a-ladle,.a-mold,.a-draw,.a-cut,.a-chip,.a-sandp,.a-prog,.t1,.t2,.t3,.ph1,.ph2,.ph3{animation:none}.a-heat{fill:var(--s1)}.a-cast{animation:none;transform:scale(var(--k,.96))}.a-ladle,.a-stream,.a-cut{opacity:0}.a-riser{transform:scaleY(.35)}.a-therm{transform:scaleY(.04)}.a-mold{opacity:.06}.a-t.t4,.ph4{animation:none;opacity:1}.a-t.t4{opacity:1}}
+.ca{margin-top:40px;border:2px solid var(--ink);padding:24px;max-width:920px}
+.ca h3{font-size:clamp(20px,2.6vw,28px);margin-bottom:18px}
+.ca-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:22px}
+.ca-t{font-family:var(--display);font-weight:700;font-size:15px}.ca-t span{font-family:var(--mono);font-weight:500;font-size:12px;color:var(--ink-dim);margin-left:6px}
+.ca-lab{font-size:13px;color:var(--ink-dim);font-family:var(--mono);margin:2px 0 8px}.ca-lab b{color:var(--ink)}
+.ca-track{position:relative;height:70px;overflow:hidden;border-bottom:3px solid var(--rule);background:var(--surface-2)}
+.ca-tgt{position:absolute;left:12%;width:76%;top:10px;bottom:10px;border:1.5px dashed var(--ink-dim)}
+.ca-part{position:absolute;top:16px;bottom:16px;left:50%;width:calc(76% * var(--w,1));margin-left:calc(-38% * var(--w,1));background:var(--s1);opacity:.85;animation:caIn 6s ease-out infinite}
+.ca-scan{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);box-shadow:0 0 8px var(--ink);left:0;opacity:0;animation:caScan 6s linear infinite}
+.ca-stamp{position:absolute;right:8px;top:6px;font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.08em;padding:3px 8px;border:2px solid currentColor;background:var(--surface);color:#d9480f;opacity:0;animation:caStamp 6s ease-out infinite}
+.ca-track[data-bad="0"] .ca-stamp,.good .ca-stamp{color:#2b8a3e}
+.ca-err{font-family:var(--mono);font-size:14px;margin-top:8px;font-weight:600}
+.ca-roll{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:22px;padding-top:16px;border-top:1px solid var(--rule)}
+.ca-roll span{display:block;font-family:var(--display);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);font-weight:600}
+.ca-roll b{font-family:var(--mono);font-size:clamp(20px,3vw,28px)}
+.ca-roll .sv b{color:#2b8a3e}
+@keyframes caIn{0%{transform:translateX(-120%);opacity:0}15%,88%{transform:none;opacity:.85}100%{transform:none;opacity:0}}
+@keyframes caScan{0%,22%{left:12%;opacity:0}25%{opacity:1}52%{left:88%;opacity:1}55%,100%{left:88%;opacity:0}}
+@keyframes caStamp{0%,55%{opacity:0;transform:scale(1.7)}62%,88%{opacity:1;transform:scale(1)}96%,100%{opacity:0;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.ca-part,.ca-scan,.ca-stamp{animation:none}.ca-stamp{opacity:1}.ca-scan{display:none}}
+.ab{border:1px solid var(--rule);background:var(--surface);padding:22px;max-width:920px;margin-bottom:28px}
+.ab-h{font-family:var(--display);font-weight:700;font-size:15px;margin-bottom:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ab-h span{font-family:var(--mono);font-weight:500;font-size:12px;color:var(--ink-dim)}
+.ab-top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.ab-chips{display:flex;gap:8px;flex-wrap:wrap}.ab-chips em{font-style:normal;font-family:var(--mono);font-size:13px;border:1px solid var(--ink);padding:4px 10px;opacity:0}
+.ab-tot{font-family:var(--mono);text-align:right}.ab-tot span{display:block;font-family:var(--display);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);font-weight:600}
+.ab-tot b{font-size:clamp(30px,5vw,46px);letter-spacing:-.02em;transition:color .3s}.ab-tot.done b{color:#2b8a3e}
+.ab-stack{display:flex;height:46px;background:var(--surface-2);border:1px solid var(--rule)}
+.ab-seg{height:100%;overflow:hidden;white-space:nowrap;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:#fff;font-weight:600}
+.ab-seg span{opacity:0;transition:opacity .3s}
+.ab-leg{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--ink-dim)}.ab-leg i{display:inline-block;width:10px;height:10px;margin-right:6px}
+.ab-grow{position:relative;height:36px;margin-top:18px;background:var(--surface-2)}
+.ab-dr{position:absolute;left:0;top:5px;bottom:5px;width:70%;border:1.5px dashed var(--ink-dim)}
+.ab-pt{position:absolute;left:0;top:10px;bottom:10px;background:var(--ink);opacity:.8;width:70%}
+.ab-cap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--ink-dim)}
+#abDone{font-family:var(--display);font-weight:700;color:#2b8a3e;opacity:0}
+.fl{border:1px solid var(--rule);background:var(--surface);padding:22px;max-width:920px;margin-bottom:28px}
+.fcv{width:100%;height:auto;display:block;background:var(--surface);border:1px solid var(--rule)}
+.fl-ctl{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0;align-items:center}.fl-ctl span{font-size:13px;color:var(--ink-dim);margin-right:4px}
+.fb{font:600 13px var(--display);border:1px solid var(--rule);background:transparent;color:var(--ink);padding:6px 12px;cursor:pointer}.fb[aria-pressed=true]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.tk{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))}
+.tk-card{border:1px solid var(--rule);padding:22px;background:var(--surface);display:flex;flex-direction:column;gap:14px}.tk-wide{grid-column:1/-1}
+.tk-card h3{font-size:20px}.tk-card p{font-size:15px;color:var(--ink-dim);line-height:1.5}
+.tk-card textarea{font:inherit;font-family:var(--mono);font-size:16px;padding:10px 12px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);width:100%;resize:vertical}
+.tk-tab{overflow-x:auto}.tk-tab table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}.tk-tab th,.tk-tab td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--rule);white-space:nowrap}.tk-tab th{font-family:var(--display);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim)}.tk-tab td:nth-child(6){font-weight:700}
+.rng{position:relative;height:34px;background:var(--surface-2);margin-top:6px}.rng i{position:absolute;inset:0;background:var(--s3);opacity:.5}.rng b{position:absolute;top:-5px;bottom:-5px;width:3px;background:var(--ink);transition:left .3s}
+.rng-l{display:flex;justify-content:space-between;font-family:var(--mono);font-size:14px}
+.tk-v{font-family:var(--mono);font-weight:600;font-size:clamp(20px,3vw,28px)}
+/* Calculator UI refresh */
+.calc{container-type:inline-size;box-shadow:0 30px 70px -30px rgba(0,0,0,.55)}
+@media (min-width:1100px){.calc{max-width:none;height:800px}}
+.calc .c-head{margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.calc .c-title{font-size:34px;letter-spacing:-.01em}
+.calc .sub{max-width:52ch}
+.calc label{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin:18px 0 7px}
+.calc label:first-of-type{margin-top:0}
+.calc .rail-label{font-size:14px;letter-spacing:.02em;margin:0 0 12px;display:flex;align-items:center}
+.calc .process-note{min-height:0;margin:8px 0 22px;padding:11px 14px;border-left:2px solid var(--patina);background:var(--panel);border-radius:0 8px 8px 0}
+.calc .chip{padding:9px 18px}
+.calc .panel{padding:20px;margin-bottom:18px;border-radius:12px}
+.calc .panel-title{font-size:17px;margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid var(--line);display:flex;align-items:center}
+.calc select,.calc input[type=number],.calc input[type=text],.calc .picker-btn{padding:12px 13px;font-size:15px;transition:border-color .2s,box-shadow .2s}
+.calc select:hover,.calc input:hover,.calc .picker-btn:hover,.calc .seg button:hover{border-color:var(--text-dim)}
+.calc select:focus-visible,.calc input:focus-visible,.calc button:focus-visible{outline:2px solid var(--molten);outline-offset:2px}
+.calc .seg button{padding:11px 6px}
+.calc .screen{counter-reset:st}
+.calc .rail-label::before,.calc .screen>section.panel:nth-of-type(1) .panel-title::before{counter-increment:st;content:counter(st);display:inline-grid;place-items:center;width:21px;height:21px;margin-right:10px;border-radius:50%;background:var(--molten);color:#000;font:700 12px 'IBM Plex Mono',monospace;flex:0 0 auto}
+.calc .chain-node{min-width:92px;padding:12px 8px}
+.calc .chain-node.final{box-shadow:inset 0 0 0 1px var(--molten)}
+.calc .aux-header{margin:26px 0 10px}
+.calc .aux-list{gap:10px}.calc .aux-item{border-radius:10px}
+.calc .aux-head{padding:13px 16px}.calc .aux-head:hover{background:var(--panel-2)}
+.calc .aux-icon{width:32px;height:32px}
+@container (min-width:600px){
+ .calc .screen{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);column-gap:24px;align-content:start;padding:28px 28px 124px}
+ .calc .c-head,.calc .rail-label,.calc .rail-outer,.calc .process-note{grid-column:1/-1}
+ .calc .screen>section.panel:nth-of-type(1){grid-column:1;grid-row:5/span 8;align-self:start}
+ .calc .screen>section.panel:nth-of-type(2){grid-column:2;grid-row:5;margin-bottom:0}
+ .calc .aux-header{grid-column:2;grid-row:6}
+ .calc .aux-list{grid-column:2;grid-row:7}
+ .calc .na-toggle{grid-column:2;grid-row:8}
+ .calc .na-detail{grid-column:2;grid-row:9}
+}
+.ca-track[data-bad="1"] .ca-part{background:#e8590c}.ca-track[data-bad="0"] .ca-part{background:#2b8a3e}
+.ca-gap{position:absolute;top:10px;bottom:10px;width:calc(38% * var(--g,0));background:repeating-linear-gradient(45deg,#d9480f 0 3px,transparent 3px 6px);opacity:0;animation:caGap 6s linear infinite}.ca-gap.l{left:12%}.ca-gap.r{right:12%}
+.ca-track[data-over="1"] .ca-gap.l{left:calc(12% - 38% * var(--g,0))}.ca-track[data-over="1"] .ca-gap.r{right:calc(12% - 38% * var(--g,0))}
+@keyframes caGap{0%,55%{opacity:0}62%,88%{opacity:1}96%,100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.ca-gap{animation:none;opacity:1}}
+.shrink-fig{border:1px solid var(--rule);background:var(--surface);padding:12px;max-width:920px}
+.shrink-fig svg{width:100%;height:auto;display:block;font-family:var(--mono);font-size:13px;fill:var(--ink)}
+.shrink-fig .dim{fill:var(--ink-dim)}
+.sh-pour{transform-box:fill-box;transform-origin:50% 100%;animation:shPour 8s ease-in-out infinite,shFill 8s ease-in-out infinite}
+.sh-g{transform-box:fill-box;transform-origin:50% 50%;animation:shShrink 8s ease-in-out infinite}
+.sh-draw{transform-box:fill-box;transform-origin:50% 50%;transform:scale(var(--k,.96));fill:none;stroke:var(--ink);stroke-width:1.5}
+.sh-pat{fill:none;stroke:var(--ink-dim);stroke-width:1.5;stroke-dasharray:6 5}
+.sh-fill{animation:shFill 8s ease-in-out infinite}
+.ph{opacity:0}.ph1{animation:ph1 8s infinite}.ph2{animation:ph2 8s infinite}.ph3{animation:ph3 8s infinite}
+@keyframes shPour{0%{transform:scaleY(0)}28%,100%{transform:scaleY(1)}}
+@keyframes shShrink{0%,38%{transform:scale(1)}68%,100%{transform:scale(var(--k,.96))}}
+@keyframes shFill{0%,35%{opacity:.3}70%,100%{opacity:.9}}
+@keyframes ph1{0%,28%{opacity:1}32%,100%{opacity:0}}
+@keyframes ph2{0%,33%{opacity:0}37%,64%{opacity:1}68%,100%{opacity:0}}
+@keyframes ph3{0%,69%{opacity:0}73%,96%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.sh-pour,.sh-g,.ph1,.ph2{animation:none}.sh-pour{opacity:.9}.sh-g{transform:scale(var(--k,.96))}.ph3{animation:none;opacity:1}}
+</style>
+<main>
+<section class="hero-band" id="calculator">
+  <div class="wrap hero">
+    <div class="hero-copy">
+      <p class="kicker">Smart casting optimization</p>
+      <h1>The pattern is never the size of the part.</h1>
+      <p class="lead">Pick a casting process and the calculator adds every allowance it needs, then gives you one pattern dimension.</p>
+
+      <div class="readout" aria-live="polite">
+        <div class="r-block">
+          <span class="r-label">Drawing</span>
+          <span class="r-val"><span class="n" id="heroDrawing">250.00</span><span class="u">mm</span></span>
+        </div>
+        <div class="r-arrow" aria-hidden="true">→</div>
+        <div class="r-block">
+          <span class="r-label">Pattern</span>
+          <span class="r-val big"><span class="n" id="heroPattern">260.61</span><span class="u">mm</span></span>
+        </div>
+      </div>
+      <p class="r-delta" id="heroDelta">+10.61 mm  (+4.2%)</p>
+      <p class="hero-meta-line" id="heroRange"></p>
+      <p class="hero-meta-line" id="heroMeta">Sand Casting · Grey Cast Iron</p>
+
+      <div class="actions">
+        <button class="btn" id="copyBtn" type="button">Copy result</button>
+        <button class="btn ghost" id="breakBtn" type="button">Full breakdown</button>
+      </div>
+    </div>
+
+    <div class="hero-demo">
+      <p class="demo-tag">Live calculator</p>
+      <div id="demo">
+      <div class="calc" id="calc">
+        <div class="screen" id="screen">
+          <div class="c-head">
+            <div class="eyebrow">Smart Casting Optimization</div>
+            <div class="c-title">Pattern Allowance Calculator</div>
+            <p class="sub">Ten pattern-design allowances, reconfigured live for the casting process you pick.</p>
+          </div>
+
+          <div class="rail-label">Casting process</div>
+          <div class="rail-outer">
+            <div class="rail" id="rail">
+              <div class="rail-indicator" id="railIndicator"></div>
+            </div>
+          </div>
+          <div class="process-note" id="processNote"></div>
+
+          <section class="panel">
+            <div class="panel-title">Material &amp; basic geometry</div>
+
+            <label for="matBtn">Material</label>
+            <button class="picker-btn" id="matBtn" aria-haspopup="true">
+              <span class="val" id="matName">Grey Cast Iron</span>
+              <span class="shrink-tag" id="matTag">10.0 mm/m</span>
+            </button>
+
+            <label for="baseDim">Basic (finished) dimension — mm</label>
+            <input type="number" id="baseDim" value="250" min="1" step="1">
+
+            <label id="surfaceLabel">Surface requiring machining</label>
+            <div class="seg" id="surfaceSeg" role="group" aria-labelledby="surfaceLabel">
+              <button data-v="none">None</button>
+              <button data-v="side" class="active">Side</button>
+              <button data-v="top">Top face</button>
+            </div>
+
+            <label for="shape">Casting shape (distortion)</label>
+            <select id="shape">
+              <option value="0">Symmetric / simple — 0%</option>
+              <option value="1">Slightly asymmetric (L) — 1%</option>
+              <option value="2" selected>U-shape / channel — 2%</option>
+              <option value="2.5">T-shape — 2.5%</option>
+              <option value="4">Complex / asymmetric — 4%</option>
+            </select>
+
+            <div id="shakeInputs">
+              <label id="moldingLabel">Molding method</label>
+              <div class="seg" id="moldingSeg" role="group" aria-labelledby="moldingLabel">
+                <button data-v="machine" class="active">Machine</button>
+                <button data-v="hand">Hand</button>
+              </div>
+              <label id="sizeLabel">Casting size</label>
+              <div class="seg" id="sizeSeg" role="group" aria-labelledby="sizeLabel">
+                <button data-v="small" class="active">Under 300mm</button>
+                <button data-v="large">Over 300mm</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="chain-title">Main body chain</div>
+            <div class="chain-sub">Shrinkage → machining → distortion → shake, in order.</div>
+            <div class="chain" id="chain"></div>
+          </section>
+
+          <div class="aux-header">
+            <div class="panel-title" style="margin:0;">Auxiliary allowances</div>
+            <div class="aux-count" id="auxCount">10 / 10 apply</div>
+          </div>
+          <div class="aux-list" id="auxList"></div>
+          <button class="na-toggle" id="naToggle" style="display:none;">▾ Why don't the rest apply here?</button>
+          <div class="na-detail" id="naDetail"><div class="na-detail-inner"><p id="naText"></p></div></div>
+        </div>
+
+        <div class="dock">
+          <div class="dock-inner" id="dockToggle" role="button" tabindex="0" aria-label="Open full breakdown">
+            <div>
+              <div class="dock-label">FINAL PATTERN DIMENSION</div>
+              <div class="dock-value"><span id="dockVal">260.61</span><span class="unit"> mm</span></div>
+            </div>
+            <div class="dock-bar" id="dockBar"></div>
+            <div class="dock-chev">▲</div>
+          </div>
+        </div>
+
+        <div class="backdrop" id="matBackdrop"></div>
+        <div class="sheet" id="matSheet" role="dialog" aria-label="Select material">
+          <div class="sheet-handle"></div>
+          <div class="sheet-title">Select material</div>
+          <div class="mat-search-wrap">
+            <label class="sr" for="matSearch">Search materials</label>
+            <input type="text" id="matSearch" placeholder="Search materials" autocomplete="off">
+          </div>
+          <div class="sheet-body" id="matList"></div>
+        </div>
+
+        <div class="backdrop" id="dockBackdrop"></div>
+        <div class="sheet" id="dockSheet" role="dialog" aria-label="Full breakdown">
+          <div class="sheet-handle"></div>
+          <div class="sheet-title">Full breakdown</div>
+          <div class="sheet-body">
+            <div class="b-section" style="margin-top:6px;">Main body chain</div>
+            <div class="breakdown-list" id="breakdownChain"></div>
+            <div class="b-section">Auxiliary allowances</div>
+            <div class="breakdown-list" id="breakdownAux"></div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="sec" id="toolkit">
+  <div class="sec-head">
+    <p class="kicker">Built for the pattern shop</p>
+    <h2>One dimension is never the whole drawing</h2>
+    <p class="lead">Size every dimension at once, see how far real-world shrinkage could move the answer, and check the old rule of thumb. All of it follows the process, material and settings chosen in the calculator above.</p>
+  </div>
+  <div class="tk">
+    <div class="tk-card tk-wide roi-in">
+      <h3>Batch sizing</h3>
+      <div class="roi-row"><label>Unit<select id="tkU"><option value="1">mm</option><option value="25.4">inch</option></select></label><label>Drawing dimensions<textarea id="tkIn" rows="2">250, 120, 45.5, 18</textarea></label></div>
+      <span class="hint">Separate values with commas, spaces or new lines. Up to 50.</span>
+      <div class="tk-tab"><table id="tkT"></table></div>
+      <div><button class="btn" id="tkCopy" type="button">Copy as CSV</button></div>
+    </div>
+    <div class="tk-card roi-in">
+      <h3>Confidence range</h3>
+      <p>Real shrinkage varies with section thickness, pouring temperature and alloy batch. Set how much, and see the pattern size it implies for your main dimension.</p>
+      <label>Shrinkage uncertainty <span class="v" id="tkV">±10%</span><input id="tkR" type="range" min="0" max="30" step="1" value="10"><span class="hint">Your assumption. Confirm against first-off castings.</span></label>
+      <div class="rng"><i></i><b id="tkM" style="left:50%"></b></div>
+      <div class="rng-l"><span id="tkLo">–</span><span id="tkNom" style="color:var(--ink-dim)">–</span><span id="tkHi">–</span></div>
+    </div>
+    <div class="tk-card">
+      <h3>Rule-of-thumb check</h3>
+      <p>Compares the shortcut of adding 1% and 3 mm with the full calculation for your current setup.</p>
+      <div class="tk-v" id="tkRuleV">–</div>
+      <p id="tkRuleT"></p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="shrinkage">
+  <div class="sec-head">
+    <p class="kicker">Why the pattern is bigger</p>
+    <h2>Metal shrinks as it cools. The pattern has to allow for it.</h2>
+    <p class="lead">Watch one full casting cycle: pour, solidify, shakeout and machining. The dashed outline is the pattern size from your calculator and the solid outline is the drawing size you need. The figures update as you change the calculator above.</p>
+  </div>
+  <div class="ab" id="ab">
+    <div class="ab-h">Inside the calculator: building the pattern size<span>live from your setup above</span></div>
+    <div class="ab-top"><div class="ab-chips" id="abChips"></div><div class="ab-tot" id="abTotW"><span>Running total</span><b id="abTot">250.00</b> mm</div></div>
+    <div class="ab-stack" id="abStack" aria-hidden="true"></div>
+    <div class="ab-leg" id="abLeg"></div>
+    <div class="ab-grow" aria-hidden="true"><div class="ab-dr"></div><div class="ab-pt" id="abPt"></div></div>
+    <div class="ab-cap"><span>Dashed: drawing size. Solid: pattern size as the allowances stack up.</span><span id="abDone">✓ Pattern size ready</span></div>
+  </div>
+  <div class="shrink-fig">
+    <svg id="shrk" viewBox="0 0 600 330" role="img" aria-label="Animation of a sand casting cycle: a ladle pours metal through a sprue into a mold cavity, the riser feeds shrinkage as it cools, the sand is shaken out, and the casting is machined to the drawing size">
+      <defs><pattern id="sand" width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".8" fill="var(--rule)"/><circle cx="6" cy="5" r=".8" fill="var(--rule)"/></pattern></defs>
+      <g class="a-mold"><rect x="60" y="60" width="480" height="200" fill="var(--surface-2)" stroke="var(--rule)"/><rect x="60" y="60" width="480" height="200" fill="url(#sand)"/>
+        <rect x="170" y="120" width="260" height="90" fill="var(--surface)"/><rect x="292" y="60" width="16" height="60" fill="var(--surface)"/><rect x="190" y="82" width="34" height="38" fill="var(--surface)"/></g>
+      <rect class="a-sprue a-heat" x="292" y="62" width="16" height="58"/>
+      <g class="a-cast"><rect class="a-fill a-heat" x="170" y="120" width="260" height="90"/></g>
+      <rect class="a-riser a-heat" x="190" y="84" width="34" height="36"/>
+      <rect class="a-pat" x="170" y="120" width="260" height="90"/>
+      <rect class="a-draw" x="170" y="120" width="260" height="90"/>
+      <g class="a-ladle"><path d="M-36 0h62l-8 24h-46z" fill="var(--ink)"/><rect class="a-stream a-heat" x="-4" y="22" width="8" height="40" transform="translate(0 0)"/></g>
+      <g class="a-cut"><rect x="170" y="103" width="26" height="12" fill="var(--ink)"/><path d="M170 115l13 7 13-7z" fill="var(--ink)"/></g>
+      <circle class="a-chip" cx="190" cy="118" r="2" style="--dx:30px"/><circle class="a-chip" cx="250" cy="118" r="2" style="--dx:24px;animation-delay:.4s"/><circle class="a-chip" cx="330" cy="118" r="2" style="--dx:36px;animation-delay:.9s"/>
+      <circle class="a-sandp" cx="110" cy="250" r="3" style="--d:60px"/><circle class="a-sandp" cx="190" cy="258" r="3" style="--d:50px"/><circle class="a-sandp" cx="300" cy="258" r="3" style="--d:56px"/><circle class="a-sandp" cx="400" cy="256" r="3" style="--d:48px"/><circle class="a-sandp" cx="490" cy="250" r="3" style="--d:62px"/>
+      <g transform="translate(560 70)"><rect x="-6" y="0" width="12" height="130" fill="var(--surface-2)" stroke="var(--rule)"/><rect class="a-therm a-heat" x="-6" y="0" width="12" height="130"/></g>
+      <text x="560" y="58" text-anchor="middle" class="dim" style="font-size:11px">TEMP</text>
+      <text class="a-t t1" x="560" y="220" text-anchor="middle">1,450°C</text><text class="a-t t2" x="560" y="220" text-anchor="middle">900°C</text><text class="a-t t3" x="560" y="220" text-anchor="middle">400°C</text><text class="a-t t4" x="560" y="220" text-anchor="middle">25°C</text>
+      <text x="300" y="280" text-anchor="middle">Pattern <tspan id="shB">260.61 mm</tspan> <tspan class="dim">→</tspan> Drawing <tspan id="shA">250.00 mm</tspan></text>
+      <text x="300" y="302" text-anchor="middle" class="ph ph1">1 · Pour: metal runs down the sprue and fills the cavity</text>
+      <text x="300" y="302" text-anchor="middle" class="ph ph2">2 · Solidify: the casting contracts and the riser feeds it</text>
+      <text x="300" y="302" text-anchor="middle" class="ph ph3">3 · Shakeout: the sand mold is broken away</text>
+      <text x="300" y="302" text-anchor="middle" class="ph ph4">4 · Machine: the extra stock is cut to the drawing size</text>
+      <rect class="a-prog" x="60" y="316" width="480" height="3"/>
+    </svg>
+  </div>
+  <div class="fl">
+    <div class="ab-h">The factory floor: one drawing, two ways to size the pattern<span>live simulation</span></div>
+    <canvas id="fcv" class="fcv" width="900" height="360" role="img" aria-label="Two production lines run side by side. Castings from the rule-of-thumb pattern are gauged and kicked into a scrap bin. Castings from the calculator pattern pass the gauge and are shipped."></canvas>
+    <div class="fl-ctl"><span>Speed</span><button class="fb" data-s="1" aria-pressed="true">1×</button><button class="fb" data-s="4" aria-pressed="false">4×</button><button class="fb" data-s="12" aria-pressed="false">12×</button><button class="fb" id="fPause" aria-pressed="false">Pause</button></div>
+    <div class="ca-roll"><div><span>Castings gauged</span><b id="fN">0</b></div><div><span>Scrapped, rule of thumb</span><b id="fScrap">–</b></div><div><span>Shipped, calculator</span><b id="fOk">0</b></div><div class="sv"><span>Scrap cost avoided</span><b id="fSave">–</b></div></div>
+    <p class="fine" style="margin-top:12px">Illustrative. Both lines make the same part; only the pattern size differs. Cost per casting and currency come from the ROI model. If the rule of thumb happens to be large enough for your setup, both lines pass.</p>
+  </div>
+  <div class="ca">
+    <h3>Same drawing. Same metal. Different outcome.</h3>
+    <div class="ca-grid">
+      <div class="ca-col"><div class="ca-t">Rule of thumb<span>+1% +3 mm</span></div><div class="ca-lab">Pattern made at <b id="caRule">255.50 mm</b></div>
+        <div class="ca-track" id="caL" data-bad="1"><div class="ca-tgt"></div><div class="ca-gap l"></div><div class="ca-gap r"></div><div class="ca-part"></div><div class="ca-scan"></div><div class="ca-stamp" id="caLv">✕ REJECT</div></div><div class="ca-err" id="caErr">–</div></div>
+      <div class="ca-col good"><div class="ca-t">Pattern Allowance Calculator<span>all allowances</span></div><div class="ca-lab">Pattern made at <b id="caCalc">260.61 mm</b></div>
+        <div class="ca-track" data-bad="0"><div class="ca-tgt"></div><div class="ca-part" id="caRp"></div><div class="ca-scan"></div><div class="ca-stamp">✓ PASS</div></div><div class="ca-err">0.00 mm off</div></div>
+    </div>
+    <div class="ca-roll" aria-live="off"><div><span>Castings gauged</span><b id="caN">0</b></div><div><span>Scrap, rule of thumb</span><b id="caScrap">–</b></div><div><span>Scrap, calculator</span><b>0</b></div><div class="sv"><span>Scrap cost avoided</span><b id="caSave">–</b></div></div>
+    <p class="fine" style="margin-top:14px">Rule of thumb here is the iron-work habit of adding 1% and 3 mm, as in the valve-body example. The gap is exaggerated for visibility (at least about 14% of the part width), and it follows your live calculator setup. Cost per casting comes from the ROI model below; counts are illustrative and a pass needs the part within 0.5 mm.</p>
+  </div>
+  <p class="fine">Schematic. Temperatures are illustrative; shrinkage is exaggerated for visibility. The split between shrinkage and machining stock is drawn as roughly 55:45, and the overall pattern-to-drawing ratio follows your calculator.</p>
+</section>
+
+<section class="sec" id="evidence">
+  <div class="sec-head">
+    <p class="kicker">The problem, in published numbers</p>
+    <h2>Foundries lose real money to rejected castings</h2>
+    <p class="lead">Peer-reviewed and published case studies report rejection rates from 5% to as high as 45%. Dimensional and sizing faults are a recurring cause, and every rejected casting carries its full material, melting and labour cost.</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="big">10–45%<small> daily</small></div><p>Rejection range found on one automobile transfer-case casting in an Indian foundry. A diagnostic study cut it to 4% from 28%.</p><button type="button" data-rej="28">Use 28% in the model</button><cite>Chokkalingam &amp; Nazirudeen, 2009 [1]</cite></div>
+    <div class="stat"><div class="big">8.5%<small> → 3.5%</small></div><p>Rejection fell when an Indian foundry replaced trial and error with simulation on a cylinder clamp casting.</p><button type="button" data-rej="8.5">Use 8.5% in the model</button><cite>Reducing Rejection Rate of Castings using Simulation Model [2]</cite></div>
+    <div class="stat"><div class="big">27%<small> → 9.8%</small></div><p>Six Sigma plus casting simulation lifted material yield to 55.3% on a green-sand product.</p><button type="button" data-rej="27">Use 27% in the model</button><cite>Inderscience, Six Sigma &amp; simulation study [3]</cite></div>
+    <div class="stat"><div class="big">5–7%</div><p>Annual rejection at a modern, automated German sand foundry. Even best-in-class plants still scrap parts.</p><button type="button" data-rej="6">Use 6% in the model</button><cite>Int. J. Metalcasting, 2023 [4]</cite></div>
+  </div>
+</section>
+
+<section class="sec" id="roi">
+  <div class="sec-head">
+    <p class="kicker">Interactive business case</p>
+    <h2>Put your foundry’s numbers in</h2>
+    <p class="lead">Change any input and the savings update live. Tap a benchmark above to load a published rejection rate. <span id="roiSetup" style="font-family:var(--mono);font-size:14px"></span></p>
+  </div>
+  <div class="roi">
+    <div class="roi-in">
+      <div class="roi-row">
+        <label>Currency<select id="roiCur"><option>₹</option><option>$</option></select></label>
+        <label>Castings poured / year<input id="roiUnits" type="number" min="0" value="50000"></label>
+      </div>
+      <div class="roi-row">
+        <label>Cost per casting<input id="roiCost" type="number" min="0" value="1200"></label>
+        <label>Tool cost / year<input id="roiLic" type="number" min="0" value="150000"></label>
+      </div>
+      <label>Current rejection rate <span class="v" id="vRej"></span><input id="roiRej" type="range" min="1" max="45" step="0.5" value="8.5"></label>
+      <label>Rejects caused by pattern sizing <span class="v" id="vDim"></span><input id="roiDim" type="range" min="0" max="60" step="1" value="20"><span class="hint">Your assumption. Check it against your own scrap log.</span></label>
+      <label>Share the calculator prevents <span class="v" id="vCut"></span><input id="roiCut" type="range" min="0" max="100" step="5" value="50"><span class="hint">Kept conservative by default.</span></label>
+    </div>
+    <div class="roi-out" aria-live="polite">
+      <div><div class="roi-lab">Estimated annual saving</div><div class="roi-big" id="oSave">–</div></div>
+      <div class="bars">
+        <div class="bar"><i id="bBefore" style="width:100%"></i><em id="tBefore"></em></div>
+        <div class="bar after"><i id="bAfter" style="width:80%"></i><em id="tAfter"></em></div>
+      </div>
+      <div class="roi-grid">
+        <div><span>Scrap cost today</span><b id="oNow">–</b></div>
+        <div><span>Castings saved</span><b id="oN">–</b></div>
+        <div><span>Net after tool cost</span><b id="oNet">–</b></div>
+        <div><span>Return multiple</span><b id="oX">–</b></div>
+        <div><span>Payback</span><b id="oPay">–</b></div>
+      </div>
+      <p class="fine" style="margin:0">Saving = castings × rejection × pattern-sizing share × share prevented × cost per casting. Currency symbol is a label only, with no conversion.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band-dark" id="ask">
+  <div class="wrap ask" style="padding-block:80px">
+    <p class="kicker">Why now</p>
+    <h2>Every pour is a decision made on a number. Make it the right one.</h2>
+    <p class="lead">One calculator replaces rule-of-thumb sizing across ten allowances and every casting process, gives the pattern shop a defensible figure, and shows the cost of getting it wrong before metal is poured.</p>
+    <div class="actions"><a class="btn" href="#roi" style="text-decoration:none">Run your numbers</a><a class="btn ghost" href="#example" style="text-decoration:none">See the valve-body case</a></div>
+  </div>
+</section>
+
+<section class="sec" id="sources">
+  <div class="sec-head"><p class="kicker">References</p><h2>Sources</h2></div>
+  <ol class="refs">
+    <li>[1] B. Chokkalingam and S. S. Mohamed Nazirudeen, “Analysis of Casting Defect through Defect Diagnostic Study Approach,” <i>Annals of Faculty Engineering Hunedoara</i>, Tome VII, Fasc. 2, 2009. <a href="https://annals.fih.upt.ro/pdf-full/2009/ANNALS-2009-2-31.pdf">annals.fih.upt.ro</a></li>
+    <li>[2] “Reducing Rejection Rate of Castings using Simulation Model,” Indian foundry case study (cylinder clamp casting, MAGMA 5), as summarised in <a href="https://www.academia.edu/81358368/Rejection_Analysis_of_Casting_Defect_Using_Statical_Quality_Tools">Rejection Analysis of Casting Defect Using Statistical Quality Tools</a>. Verify original authors before external use.</li>
+    <li>[3] Six Sigma and casting-simulation study of gating-related defects in green sand casting, Inderscience. <a href="https://www.inderscience.com/filter.php?aid=112364">inderscience.com</a></li>
+    <li>[4] Data-driven process control study of a German sand foundry, <i>International Journal of Metalcasting</i>, 2023, doi:10.1007/s40962-023-01080-z. <a href="https://mediatum.ub.tum.de/doc/1763588/1763588.pdf">mediatum.ub.tum.de</a></li>
+  </ol>
+  <p class="fine">Figures are quoted as published for the cited plants and products. They are context, not a guarantee of results at another foundry.</p>
+</section>
+
+<section class="sec" id="benefits">
+  <div class="sec-head rv">
+    <p class="kicker">Why use it</p>
+    <h2>Get the size right before metal is poured</h2>
+  </div>
+  <div class="ben3">
+    <div class="rv">
+      <h3>Fewer trial castings</h3>
+      <p>Every allowance is worked out before the first pour, so fewer patterns need correcting after the sample comes back.</p>
+    </div>
+    <div class="rv" style="--d:.08s">
+      <h3>Right for the process</h3>
+      <p>Switch from sand to die casting and the allowances that do not apply drop out on their own.</p>
+    </div>
+    <div class="rv" style="--d:.16s">
+      <h3>Less scrap</h3>
+      <p>An undersized casting is the costliest mistake, because the machining stock is already gone. A correct pattern avoids it.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band-dark" id="example">
+  <div class="wrap case">
+    <div class="rv">
+      <p class="kicker">Example</p>
+      <h2>A 400 mm steel valve body</h2>
+      <p class="lead">A foundry sizes the pattern with an iron-work habit of adding 1% and 3 mm. The same drawing in cast steel needs more, and the calculator shows how much.</p>
+      <div class="actions">
+        <button class="btn" id="caseLoad" type="button">Load this case</button>
+      </div>
+    </div>
+    <div class="cmp-box rv" style="--d:.1s">
+      <div class="cmp-scroll">
+        <table class="cmp" id="cmpTable">
+          <thead><tr><th scope="col">Step</th><th scope="col">Rule of thumb</th><th scope="col">Calculator</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="verdict" id="verdict"></div>
+      <p class="gb-note" style="margin-top:14px;">Illustrative case using the calculator's teaching data: sand casting, Cast Steel WCB, top face machined, T-shape, hand molding.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="steps">
+  <div class="sec-head rv">
+    <p class="kicker">How it adds up</p>
+    <h2>Four steps, in this order</h2>
+    <p class="lead">Distortion and shake are percentages of the running size, so the order matters. These values follow the calculator.</p>
+  </div>
+  <div class="steps rv" id="stepsRow"></div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="page">
+    <p>All figures are representative teaching values for pattern-design coursework, not a certified foundry data sheet. Verify them before production use.</p>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ============================================================
+// Reference data (from the calculator source)
+// ============================================================
+const MATERIALS = (() => {
+  const list = [];
+  const add = (cat, shrink, names) => names.forEach(name => list.push({ name, shrink, cat }));
+
+  [
+    ["Grey Cast Iron", 10.0], ["White Cast Iron", 21.0], ["Malleable Cast Iron", 10.0],
+    ["Ductile (SG) Iron", 11.0], ["Cast Carbon Steel", 21.0], ["Cast Alloy Steel", 20.0],
+    ["Aluminum (pure)", 13.0], ["Aluminum-Silicon Alloy (LM6/A356)", 15.0], ["Brass (Yellow)", 15.0],
+    ["Bronze (Phosphor / Gun metal)", 10.5], ["Copper (pure)", 16.0], ["Zinc Alloy (ZAMAK)", 13.5],
+    ["Magnesium Alloy", 14.0], ["Lead", 25.0], ["Tin / White Metal", 20.0],
+  ].forEach(([name, shrink]) => list.push({ name, shrink, cat: "Common / General Purpose" }));
+
+  add("Grey Cast Iron — ASTM A48", 10.0,
+    ["Class 20", "Class 25", "Class 30", "Class 35", "Class 40", "Class 50", "Class 55", "Class 60"].map(g => `Grey Iron ${g}`));
+  add("Ductile Iron — ASTM A536", 11.0,
+    ["60-40-18", "65-45-12", "70-50-05", "80-55-06", "100-70-03", "120-90-02"].map(g => `Ductile Iron ${g}`));
+  add("Austempered Ductile Iron — ASTM A897", 11.0,
+    ["110-70-11", "130-90-09", "150-110-07", "175-125-04", "200-155-02", "230-185-01"].map(g => `ADI Grade ${g}`));
+  add("Ni-Resist / Solution-Strengthened Ductile Iron — ASTM A439", 11.0,
+    ["D2", "D2B", "D2C", "D3", "D3A", "D4", "D5", "D5B", "D5S"].map(g => `Ductile Iron ${g}`));
+  add("Malleable Iron — ASTM A47 / A220", 10.0,
+    ["32510", "35018", "40010", "45006", "45008", "50005", "60003", "60004", "70003", "80002", "90001"].map(g => `Malleable Iron ${g}`));
+  add("Cast Carbon Steel — ASTM A27 / A216", 21.0,
+    ["WCA", "WCB", "WCC", "Grade 60-30", "Grade 65-35", "Grade 70-36", "Grade 70-40"].map(g => `Cast Steel ${g}`));
+  add("Cast Alloy Steel — ASTM A217", 20.0,
+    ["WC1", "WC4", "WC5", "WC6", "WC9", "WC11", "C5", "C12", "C12A"].map(g => `Cast Steel ${g}`));
+  add("Cast Stainless Steel — ASTM A743 / A744 (ACI grades)", 20.5,
+    ["CA15", "CA6NM", "CF8", "CF8M", "CF3", "CF3M", "CN7M", "CD4MCu", "HK30", "HK40", "HH", "HT"]);
+
+  add("Aluminum-Silicon Casting Alloys (3xx.0 series)", 15.0,
+    ["308.0", "319.0", "A319.0", "B319.0", "320.0", "332.0", "333.0", "A333.0", "336.0", "354.0",
+     "355.0", "C355.0", "356.0", "A356.0", "357.0", "A357.0", "C357.0", "359.0", "360.0", "A360.0",
+     "362.0", "365.0", "A365.0", "367.0", "368.0", "380.0", "A380.0", "B380.0", "383.0", "384.0",
+     "A384.0", "390.0", "A390.0", "B390.0", "391.0", "A391.0", "B391.0", "413.0", "A413.0", "443.0",
+     "A443.0", "B443.0", "C443.0"].map(g => `Aluminum ${g}`));
+  add("Aluminum-Copper Casting Alloys (2xx.0 series)", 14.0,
+    ["201.0", "A201.0", "206.0", "A206.0", "208.0", "238.0", "242.0", "295.0", "296.0"].map(g => `Aluminum ${g}`));
+  add("Aluminum-Magnesium Casting Alloys (5xx.0 series)", 13.5,
+    ["511.0", "512.0", "513.0", "514.0", "515.0", "518.0", "520.0", "535.0", "A535.0", "B535.0"].map(g => `Aluminum ${g}`));
+  add("Aluminum-Zinc/Tin Casting Alloys (7xx.0 / 8xx.0 series)", 14.5,
+    ["710.0", "711.0", "712.0", "713.0", "771.0", "772.0", "850.0", "851.0", "852.0", "853.0"].map(g => `Aluminum ${g}`));
+
+  add("Tin & Leaded Tin Bronze (UNS C9xxxx)", 10.5,
+    ["C90200", "C90300", "C90500", "C90700", "C90800", "C90900", "C91000", "C91100", "C91300", "C91600",
+     "C91700", "C92200", "C92300", "C92400", "C92500", "C92600", "C92700", "C92800", "C92900", "C93200",
+     "C93400", "C93500", "C93700", "C93800", "C93900", "C94000", "C94100"]);
+  add("Nickel-Tin Bronze (UNS C94xxx)", 10.5, ["C94300", "C94400", "C94500", "C94700", "C94800", "C94900"]);
+  add("Manganese & Aluminum Bronze (UNS C86xxx / C95xxx)", 11.5,
+    ["C86100", "C86200", "C86300", "C86400", "C86500", "C86700", "C86800", "C95200", "C95300", "C95400", "C95500", "C95800", "C96400"]);
+  add("Silicon Bronze (UNS C87xxx)", 11.0, ["C87200", "C87400", "C87500", "C87600", "C87800", "C87900"]);
+  add("Red & Semi-Red Brass (UNS C83xxx / C84xxx)", 15.0,
+    ["C83300", "C83400", "C83450", "C83600", "C83800", "C84200", "C84400", "C84500", "C84800", "C85200"]);
+  add("Yellow & Leaded Yellow Brass (UNS C85xxx)", 15.5, ["C85400", "C85500", "C85700", "C85800"]);
+  add("High Copper Casting Alloys (UNS C8xxxx)", 16.0,
+    ["C80100", "C80300", "C80500", "C80700", "C80900", "C81100", "C81300", "C81400", "C81500", "C81700",
+     "C81800", "C82000", "C82100", "C82200", "C82400", "C82500", "C82600", "C82700", "C82800"]);
+  add("Copper-Nickel Casting Alloys (UNS C97xxx)", 12.0, ["C97300", "C97400", "C97600", "C97800"]);
+
+  add("Zinc Die Casting Alloys (Zamak)", 13.0, ["Zamak 2", "Zamak 3", "Zamak 5", "Zamak 7"]);
+  add("Zinc-Aluminum Casting Alloys (ZA)", 14.0, ["ZA-8", "ZA-12", "ZA-27", "EZAC", "ACuZinc5", "Kayem", "ZP0410", "ZP0430"]);
+
+  add("Magnesium Casting Alloys", 14.0, ["AZ63", "AZ91", "AZ91D", "AZ92", "AM60", "AM60B", "AM50", "AM50A", "A10"]);
+
+  return list;
+})();
+
+const PROCESSES = [
+  { abbr:"SAND", name:"Sand Casting", draftExt:1, draftInt:3, fettlingMm:1.0,
+    ok:{draft:true, distortion:true, shake:true, corePrint:true, riser:true, chaplet:true, wear:true},
+    note:"Rammed sand mold with a reusable pattern — all ten allowances apply." },
+  { abbr:"DIE", name:"Die Casting (Pressure)", draftExt:0.75, draftInt:1.5, fettlingMm:2.5,
+    ok:{draft:true, distortion:true, shake:false, corePrint:true, riser:false, chaplet:false, wear:false},
+    note:"Permanent steel die, pressure-fed — no rapping, no gravity riser, no sand chaplets, and die wear isn't modeled here." },
+  { abbr:"INV", name:"Investment Casting (Lost Wax)", draftExt:0.3, draftInt:0.5, fettlingMm:1.0,
+    ok:{draft:true, distortion:true, shake:false, corePrint:false, riser:true, chaplet:false, wear:false},
+    note:"Wax pattern is melted out, not withdrawn — no shake; ceramic cores are shell-supported, not print-supported; the wax pattern is single-use." },
+  { abbr:"CONT", name:"Continuous Casting", draftExt:0, draftInt:0, fettlingMm:0.5,
+    ok:{draft:false, distortion:false, shake:false, corePrint:false, riser:false, chaplet:false, wear:false},
+    note:"Metal is drawn continuously through a water-cooled die — there's no discrete pattern to draft, rap, core, feed with a riser, or wear down." },
+  { abbr:"PERM", name:"Permanent Mold (Gravity)", draftExt:2, draftInt:3, fettlingMm:1.5,
+    ok:{draft:true, distortion:true, shake:false, corePrint:true, riser:true, chaplet:true, wear:false},
+    note:"Reusable metal mold is opened rather than rapped — no shake allowance; the metal mold itself needs no wear allowance." },
+  { abbr:"SHELL", name:"Shell Mold Casting", draftExt:0.75, draftInt:1.5, fettlingMm:1.0,
+    ok:{draft:true, distortion:true, shake:true, corePrint:true, riser:true, chaplet:true, wear:true},
+    note:"Resin-bonded shell around a reusable pattern behaves like finer-tolerance sand casting — all ten allowances still apply." },
+  { abbr:"CENT", name:"Centrifugal Casting", draftExt:0.5, draftInt:0.5, fettlingMm:1.5,
+    ok:{draft:false, distortion:false, shake:false, corePrint:true, riser:false, chaplet:false, wear:false},
+    note:"Metal is thrown outward in a rotating mold, not poured around a withdrawn pattern — only end cores need a print, and no riser is needed." },
+  { abbr:"FOAM", name:"Lost Foam Casting", draftExt:0, draftInt:0, fettlingMm:1.0,
+    ok:{draft:false, distortion:true, shake:false, corePrint:false, riser:true, chaplet:false, wear:false},
+    note:"The foam pattern vaporizes in place — no draft or shake; foam sections are glued rather than print-supported; single-use, so no wear allowance." },
+];
+
+const AUX_DEFS = [
+  { key:"draft", icon:"◤", name:"Draft (Taper)" },
+  { key:"corePrint", icon:"⊙", name:"Core Print" },
+  { key:"riser", icon:"▲", name:"Riser (Feeder)" },
+  { key:"chaplet", icon:"✦", name:"Chaplet" },
+  { key:"fettling", icon:"✂", name:"Fettling" },
+  { key:"wear", icon:"↻", name:"Wear" },
+];
+
+// Machining stock by basic dimension: [upper limit mm, side, top face]
+const MACH = [[150,1.5,3],[300,3,4.5],[500,4,5.5],[900,5.5,7],[1500,7,9],[Infinity,9,12]];
+const MACH_LABELS = ["Up to 150 mm","151 to 300 mm","301 to 500 mm","501 to 900 mm","901 to 1500 mm","Over 1500 mm"];
+
+function machRowIndex(dim){ return MACH.findIndex(r => dim <= r[0]); }
+function machiningTable(dim, surface){
+  if (surface === "none") return 0;
+  const r = MACH[machRowIndex(dim)];
+  return surface === "top" ? r[2] : r[1];
+}
+function corePrintLen(d){
+  if (d<=25) return 10; if (d<=50) return 15; if (d<=75) return 20;
+  if (d<=100) return 25; if (d<=150) return 30; if (d<=200) return 40; return 50;
+}
+function chapletSpec(w){
+  if (w<=5) return [6,1.5]; if (w<=15) return [10,2.0]; if (w<=40) return [16,2.5];
+  if (w<=100) return [22,3.0]; return [30,4.0];
+}
+function shakePct(molding, size){
+  if (molding === "machine") return 0;
+  return size === "large" ? 1.0 : 0.5;
+}
+
+// ============================================================
+// State
+// ============================================================
+const $ = id => document.getElementById(id);
+const REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const state = {
+  processIdx: 0, materialIdx: 0,
+  surface: "side", molding: "machine", size: "small",
+  coreOrient: "horizontal", draftSurface: "external",
+};
+
+// ============================================================
+// Process rail
+// ============================================================
+const rail = $("rail");
+const railIndicator = $("railIndicator");
+PROCESSES.forEach((p, i) => {
+  const btn = document.createElement("button");
+  btn.className = "chip" + (i === 0 ? " active" : "");
+  btn.type = "button";
+  btn.textContent = p.abbr;
+  btn.title = p.name;
+  btn.addEventListener("click", () => selectProcess(i));
+  rail.appendChild(btn);
+});
+function moveIndicator(){
+  const chip = rail.querySelectorAll(".chip")[state.processIdx];
+  if (!chip) return;
+  railIndicator.style.left = chip.offsetLeft + "px";
+  railIndicator.style.width = chip.offsetWidth + "px";
+}
+function selectProcess(i){
+  state.processIdx = i;
+  rail.querySelectorAll(".chip").forEach((c, idx) => c.classList.toggle("active", idx === i));
+  moveIndicator();
+  $("processNote").textContent = PROCESSES[i].note;
+  renderAuxList();
+  compute();
+}
+
+// ============================================================
+// Material sheet
+// ============================================================
+const matList = $("matList");
+const matSearch = $("matSearch");
+matSearch.placeholder = `Search ${MATERIALS.length} materials, e.g. "bronze", "356", "C93700"`;
+
+function selectMaterial(i){
+  const m = MATERIALS[i];
+  state.materialIdx = i;
+  $("matName").textContent = m.name;
+  $("matTag").textContent = m.shrink + " mm/m";
+  compute();
+}
+
+function renderMatList(filterText){
+  matList.innerHTML = "";
+  const f = (filterText || "").trim().toLowerCase();
+  let lastCat = null;
+  let shown = 0;
+  const frag = document.createDocumentFragment();
+
+  MATERIALS.forEach((m, i) => {
+    if (f && !m.name.toLowerCase().includes(f) && !m.cat.toLowerCase().includes(f)) return;
+    if (m.cat !== lastCat) {
+      const header = document.createElement("div");
+      header.className = "mat-group-header";
+      header.textContent = m.cat;
+      frag.appendChild(header);
+      lastCat = m.cat;
+    }
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "mat-row" + (i === state.materialIdx ? " selected" : "");
+    const a = document.createElement("span"); a.textContent = m.name;
+    const b = document.createElement("span"); b.className = "tag"; b.textContent = m.shrink + " mm/m";
+    row.append(a, b);
+    row.addEventListener("click", () => {
+      selectMaterial(i);
+      closeSheet("mat");
+      matSearch.value = "";
+      renderMatList("");
+    });
+    frag.appendChild(row);
+    shown++;
+  });
+
+  if (shown === 0) {
+    const empty = document.createElement("div");
+    empty.className = "mat-empty";
+    empty.textContent = `No materials match "${filterText}".`;
+    frag.appendChild(empty);
+  }
+  matList.appendChild(frag);
+}
+renderMatList("");
+matSearch.addEventListener("input", () => renderMatList(matSearch.value));
+
+// ============================================================
+// Segmented controls
+// ============================================================
+function wireSeg(id, stateKey){
+  const el = $(id);
+  el.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      el.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state[stateKey] = btn.dataset.v;
+      compute();
+    });
+  });
+}
+wireSeg("surfaceSeg", "surface");
+wireSeg("moldingSeg", "molding");
+wireSeg("sizeSeg", "size");
+$("baseDim").addEventListener("input", compute);
+$("shape").addEventListener("change", compute);
+
+// ============================================================
+// Sheets (contained in the device frame)
+// ============================================================
+function openSheet(name){
+  $(name === "mat" ? "matSheet" : "dockSheet").classList.add("open");
+  $(name === "mat" ? "matBackdrop" : "dockBackdrop").classList.add("open");
+  if (name === "mat") {
+    matSearch.value = "";
+    renderMatList("");
+    setTimeout(() => { try { matSearch.focus({ preventScroll:true }); } catch(e){} }, 320);
+  }
+}
+function closeSheet(name){
+  $(name === "mat" ? "matSheet" : "dockSheet").classList.remove("open");
+  $(name === "mat" ? "matBackdrop" : "dockBackdrop").classList.remove("open");
+}
+$("matBtn").addEventListener("click", () => openSheet("mat"));
+$("matBackdrop").addEventListener("click", () => closeSheet("mat"));
+$("dockToggle").addEventListener("click", () => openSheet("dock"));
+$("dockToggle").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSheet("dock"); } });
+$("dockBackdrop").addEventListener("click", () => closeSheet("dock"));
+document.addEventListener("keydown", e => { if (e.key === "Escape") { closeSheet("mat"); closeSheet("dock"); } });
+
+// ============================================================
+// Auxiliary accordion
+// ============================================================
+const auxList = $("auxList");
+
+function auxInputsHTML(key){
+  switch(key){
+    case "draft": return `
+      <div class="row2">
+        <div><label for="in-draftHeight">Face height — mm</label><input type="number" id="in-draftHeight" class="aux-in" data-k="draftHeight" value="250" min="0"></div>
+        <div><label for="in-draftAngle">Angle — °</label><input type="number" id="in-draftAngle" class="aux-in" data-k="draftAngle" value="${PROCESSES[state.processIdx].draftExt}" min="0" step="0.1"></div>
+      </div>
+      <label id="draftSurfLabel">Surface</label>
+      <div class="seg" data-seg="draftSurface" role="group" aria-labelledby="draftSurfLabel">
+        <button type="button" data-v="external" class="active">External</button>
+        <button type="button" data-v="internal">Internal</button>
+      </div>`;
+    case "corePrint": return `
+      <label id="coreOrientLabel">Orientation</label>
+      <div class="seg" data-seg="coreOrient" role="group" aria-labelledby="coreOrientLabel">
+        <button type="button" data-v="horizontal" class="active">Horizontal</button>
+        <button type="button" data-v="vertical">Vertical</button>
+      </div>
+      <label for="in-coreDia">Core diameter — mm</label>
+      <input type="number" id="in-coreDia" class="aux-in" data-k="coreDia" value="50" min="1">`;
+    case "riser": return `
+      <div class="row2">
+        <div><label for="in-castVol">Casting volume — cm³</label><input type="number" id="in-castVol" class="aux-in" data-k="castVol" value="500" min="1"></div>
+        <div><label for="in-castArea">Surface area — cm²</label><input type="number" id="in-castArea" class="aux-in" data-k="castArea" value="450" min="1"></div>
+      </div>`;
+    case "chaplet": return `
+      <label for="in-coreWeight">Core weight — kg</label>
+      <input type="number" id="in-coreWeight" class="aux-in" data-k="coreWeight" value="10" min="0">`;
+    case "fettling": return `<p style="font-size:12.5px; color:var(--text-dim); margin:0;">Auto-set from the selected process — no extra input needed.</p>`;
+    case "wear": return `
+      <label for="in-patternMat">Pattern material</label>
+      <select id="in-patternMat" class="aux-in" data-k="patternMat">
+        <option value="wood">Wood (0.30%)</option>
+        <option value="metal">Metal (0.05%)</option>
+        <option value="plastic">Plastic / Resin (0.10%)</option>
+      </select>`;
+  }
+}
+
+function renderAuxList(){
+  const proc = PROCESSES[state.processIdx];
+  auxList.innerHTML = "";
+  let visibleIdx = 0;
+  AUX_DEFS.forEach((def) => {
+    if (def.key !== "fettling" && !proc.ok[def.key]) return;
+    const item = document.createElement("div");
+    item.className = "aux-item";
+    item.style.animationDelay = (visibleIdx * 45) + "ms";
+    item.dataset.key = def.key;
+    item.innerHTML = `
+      <button class="aux-head" type="button" aria-expanded="false">
+        <span class="aux-icon" aria-hidden="true">${def.icon}</span>
+        <span class="aux-name">${def.name}</span>
+        <span class="aux-val" data-val="${def.key}">—</span>
+        <span class="aux-caret" aria-hidden="true">▾</span>
+      </button>
+      <div class="aux-body-wrap"><div class="aux-body-inner"><div class="aux-body">
+        ${auxInputsHTML(def.key)}
+        <div class="aux-result" data-result="${def.key}"></div>
+      </div></div></div>`;
+    auxList.appendChild(item);
+    visibleIdx++;
+
+    const head = item.querySelector(".aux-head");
+    head.addEventListener("click", () => {
+      const open = item.classList.toggle("open");
+      head.setAttribute("aria-expanded", open);
+    });
+    item.querySelectorAll(".aux-in").forEach(inp => inp.addEventListener("input", compute));
+    item.querySelectorAll("[data-seg]").forEach(segEl => {
+      segEl.querySelectorAll("button").forEach(b => {
+        b.addEventListener("click", () => {
+          segEl.querySelectorAll("button").forEach(x => x.classList.remove("active"));
+          b.classList.add("active");
+          if (segEl.dataset.seg === "draftSurface") {
+            state.draftSurface = b.dataset.v;
+            const angle = item.querySelector('[data-k="draftAngle"]');
+            const p = PROCESSES[state.processIdx];
+            if (angle) angle.value = b.dataset.v === "internal" ? p.draftInt : p.draftExt;
+          }
+          if (segEl.dataset.seg === "coreOrient") state.coreOrient = b.dataset.v;
+          compute();
+        });
+      });
+    });
+  });
+
+  const total = 3 + Object.values(proc.ok).filter(Boolean).length; // shrinkage + machining + fettling always apply
+  $("auxCount").textContent = `${total} / 10 apply`;
+  const naToggle = $("naToggle");
+  const naDetail = $("naDetail");
+  if (total < 10){
+    naToggle.style.display = "block";
+    $("naText").textContent = proc.note;
+    naToggle.onclick = () => {
+      naDetail.classList.toggle("open");
+      naToggle.textContent = naDetail.classList.contains("open") ? "▴ Hide details" : "▾ Why don't the rest apply here?";
+    };
+  } else {
+    naToggle.style.display = "none";
+    naDetail.classList.remove("open");
+  }
+}
+
+// ============================================================
+// Number animation (always lands on the final value)
+// ============================================================
+function animateText(el, to, decimals){
+  const from = parseFloat(el.dataset.raw || "0");
+  el.dataset.raw = to;
+  const id = (el._a = (el._a || 0) + 1);
+  clearTimeout(el._t);
+  if (REDUCED || from === to){ el.textContent = to.toFixed(decimals); return; }
+  const start = performance.now(), dur = 420;
+  function tick(now){
+    if (el._a !== id) return;
+    const t = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = (from + (to - from) * eased).toFixed(decimals);
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+  el._t = setTimeout(() => { if (el._a === id) el.textContent = to.toFixed(decimals); }, dur + 140);
+}
+
+// ============================================================
+// Master compute
+// ============================================================
+function readAux(key, k){
+  const el = document.querySelector(`.aux-item[data-key="${key}"] [data-k="${k}"]`);
+  return el ? el.value : null;
+}
+
+function compute(){
+  const proc = PROCESSES[state.processIdx];
+  const mat = MATERIALS[state.materialIdx];
+  const dim = parseFloat($("baseDim").value) || 0;
+
+  const shrinkAdd = dim * (mat.shrink / 1000);
+  let running = dim + shrinkAdd;
+  const machAdd = machiningTable(dim, state.surface);
+  running += machAdd;
+
+  const distortPct = parseFloat($("shape").value);
+  const distortAdd = proc.ok.distortion ? running * (distortPct / 100) : 0;
+  running += distortAdd;
+
+  let shakeSub = 0;
+  $("shakeInputs").style.display = proc.ok.shake ? "block" : "none";
+  if (proc.ok.shake){
+    const pct = shakePct(state.molding, state.size);
+    shakeSub = running * (pct / 100);
+    running -= shakeSub;
+  }
+  const final = running;
+
+  // Chain strip
+  const chain = $("chain");
+  const nodes = [
+    ["Basic", dim, false],
+    ["Shrink", shrinkAdd, false],
+    ["Machine", machAdd, false],
+  ];
+  if (proc.ok.distortion) nodes.push(["Distort", distortAdd, false]);
+  if (proc.ok.shake) nodes.push(["Shake", -shakeSub, true]);
+  if (!chain.dataset.built || chain.dataset.built !== String(nodes.length)){
+    let html = "";
+    nodes.forEach((n, i) => {
+      if (i > 0) html += `<span class="chain-arrow">→</span>`;
+      html += `<div class="chain-node${n[2]?' neg':''}"><div class="k">${n[0]}</div><div class="v" data-node="${i}">0.00</div></div>`;
+    });
+    html += `<span class="chain-arrow">=</span><div class="chain-node final"><div class="k">Final</div><div class="v" data-node="final">0.00</div></div>`;
+    chain.innerHTML = html;
+    chain.dataset.built = String(nodes.length);
+  }
+  nodes.forEach((n, i) => {
+    const el = chain.querySelector(`[data-node="${i}"]`);
+    if (el) animateText(el, n[1], 2);
+  });
+  animateText(chain.querySelector('[data-node="final"]'), final, 2);
+
+  // Auxiliary results
+  const results = {};
+  if (proc.ok.draft){
+    const h = parseFloat(readAux("draft","draftHeight")) || 0;
+    const a = parseFloat(readAux("draft","draftAngle")) || 0;
+    const add = h * Math.tan(a * Math.PI/180);
+    results.draft = { text:`${a}° over ${h} mm → <b>${add.toFixed(2)} mm</b> extra at the far face.`, val:add.toFixed(2)+" mm" };
+  }
+  if (proc.ok.corePrint){
+    const dia = parseFloat(readAux("corePrint","coreDia")) || 0;
+    const base = corePrintLen(dia);
+    if (state.coreOrient === "horizontal"){
+      results.corePrint = { text:`⌀${dia} mm horizontal core → <b>${base} mm</b> print at each end.`, val:base+" mm" };
+    } else {
+      const top = Math.round(base*0.6);
+      results.corePrint = { text:`⌀${dia} mm vertical core → bottom <b>${base} mm</b>, top <b>${top} mm</b>.`, val:`${base}/${top} mm` };
+    }
+  }
+  if (proc.ok.riser){
+    const V = parseFloat(readAux("riser","castVol")) || 0;
+    const A = parseFloat(readAux("riser","castArea")) || 1;
+    const Mc = V/A, Mr = 1.2*Mc, D = 6*Mr, H = D, Vr = Math.PI*D*D*H/4;
+    results.riser = { text:`Modulus ${Mc.toFixed(2)}→${Mr.toFixed(2)} cm → riser <b>${(D*10).toFixed(0)}×${(H*10).toFixed(0)} mm</b> (${Vr.toFixed(0)} cm³).`, val:`${(D*10).toFixed(0)}×${(H*10).toFixed(0)} mm` };
+  }
+  if (proc.ok.chaplet){
+    const w = parseFloat(readAux("chaplet","coreWeight")) || 0;
+    const [cd, stock] = chapletSpec(w);
+    results.chaplet = { text:`${w} kg core → <b>⌀${cd} mm</b> chaplet, <b>${stock} mm</b> cleanup stock at the head.`, val:`⌀${cd} mm` };
+  }
+  results.fettling = { text:`${proc.name} → <b>${proc.fettlingMm} mm</b> extra stock at the parting line / flash.`, val:proc.fettlingMm+" mm" };
+  if (proc.ok.wear){
+    const pm = readAux("wear","patternMat") || "wood";
+    const pct = pm === "wood" ? 0.30 : pm === "metal" ? 0.05 : 0.10;
+    const add = dim * (pct/100);
+    results.wear = { text:`${pm[0].toUpperCase()+pm.slice(1)} pattern → <b>${add.toFixed(3)} mm</b> suggested oversize.`, val:add.toFixed(2)+" mm" };
+  }
+
+  Object.keys(results).forEach(key => {
+    const valEl = document.querySelector(`[data-val="${key}"]`);
+    const resEl = document.querySelector(`[data-result="${key}"]`);
+    if (valEl) valEl.textContent = results[key].val;
+    if (resEl) resEl.innerHTML = results[key].text;
+  });
+
+  // Dock
+  animateText($("dockVal"), final, 2);
+  const segs = [
+    { v: Math.abs(shrinkAdd), c: "#FFFFFF" },
+    { v: Math.abs(machAdd), c: "#BDBDBD" },
+    { v: Math.abs(distortAdd), c: "#808080" },
+    { v: Math.abs(shakeSub), c: "#4D4D4D" },
+  ];
+  const tot = segs.reduce((s,x)=>s+x.v,0) || 1;
+  $("dockBar").innerHTML = segs.map(s =>
+    `<span style="width:${(s.v/tot*100).toFixed(1)}%; background:${s.c}"></span>`).join("");
+
+  // Full breakdown sheet
+  $("breakdownChain").innerHTML = [
+    ["Basic (finished) dimension", dim.toFixed(2)+" mm"],
+    [`+ Shrinkage (${mat.shrink} mm/m, ${mat.name})`, "+"+shrinkAdd.toFixed(2)+" mm"],
+    [`+ Machining (${state.surface} surface)`, "+"+machAdd.toFixed(2)+" mm"],
+    proc.ok.distortion ? [`+ Distortion (${distortPct}%)`, "+"+distortAdd.toFixed(2)+" mm"] : ["Distortion", "Not applicable"],
+    proc.ok.shake ? ["− Shake correction", "−"+shakeSub.toFixed(2)+" mm"] : ["Shake correction", "Not applicable"],
+    ["Final pattern dimension", final.toFixed(2)+" mm"],
+  ].map(r => `<div class="b-row"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div>`).join("");
+
+  $("breakdownAux").innerHTML = AUX_DEFS.map(def => {
+    if (def.key !== "fettling" && !proc.ok[def.key]) return `<div class="b-row"><span class="k">${def.name}</span><span class="v">Not applicable</span></div>`;
+    return `<div class="b-row"><span class="k">${def.name}</span><span class="v">${results[def.key] ? results[def.key].val : "—"}</span></div>`;
+  }).join("");
+
+  document.dispatchEvent(new CustomEvent("calc:update", { detail:{ dim, shrinkAdd, machAdd, distortAdd, distortPct, shakeSub, final, proc, mat, results } }));
+}
+
+
+// ============================================================
+// Page: hero readout, steps, example, theme, reveal
+// ============================================================
+const root = document.documentElement;
+const f2 = n => (Math.abs(n) < 0.005 ? 0 : n).toFixed(2);
+const sg = n => (n < 0 ? "−" : "+") + f2(Math.abs(n));
+const procBy = abbr => PROCESSES.find(p => p.abbr === abbr);
+const matBy = name => MATERIALS.find(m => m.name === name);
+let lastCalc = null;
+
+function engine(proc, mat, dim, surface, shapePct, molding, size){
+  const shrink = dim * mat.shrink / 1000;
+  let run = dim + shrink;
+  const mach = machiningTable(dim, surface);
+  run += mach;
+  const distort = proc.ok.distortion ? run * shapePct / 100 : 0;
+  run += distort;
+  let shake = 0;
+  if (proc.ok.shake){ shake = run * shakePct(molding, size) / 100; run -= shake; }
+  return { shrink, mach, distort, shake, final: run };
+}
+
+let toastTimer;
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+}
+
+// Theme
+function effTheme(){
+  const t = root.getAttribute("data-theme");
+  if (t) return t;
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+function syncThemeBtn(){ $("themeBtn").textContent = effTheme() === "dark" ? "Light" : "Dark"; }
+try { const saved = localStorage.getItem("pac-theme"); if (saved === "dark" || saved === "light") root.setAttribute("data-theme", saved); } catch(e){}
+$("themeBtn").addEventListener("click", () => {
+  const next = effTheme() === "dark" ? "light" : "dark";
+  root.setAttribute("data-theme", next);
+  try { localStorage.setItem("pac-theme", next); } catch(e){}
+  syncThemeBtn();
+});
+syncThemeBtn();
+
+// Hero readout + steps
+function updatePage(s){
+  const proc = s.proc, mat = s.mat;
+  $("heroDrawing").textContent = f2(s.dim);
+  $("heroPattern").textContent = f2(s.final);
+  const delta = s.final - s.dim, pct = s.dim ? delta / s.dim * 100 : 0;
+  $("heroDelta").textContent = `${delta >= 0 ? "+" : "−"}${f2(Math.abs(delta))} mm  (${pct >= 0 ? "+" : "−"}${Math.abs(pct).toFixed(1)}%)`;
+  $("heroMeta").textContent = `${proc.name} · ${mat.name}`;
+
+  const cells = [
+    ["Drawing", f2(s.dim), true],
+    ["Shrinkage", sg(s.shrinkAdd), true],
+    ["Machining", s.machAdd ? sg(s.machAdd) : "0.00", true],
+    ["Distortion", proc.ok.distortion ? sg(s.distortAdd) : "n/a", proc.ok.distortion],
+    ["Shake", proc.ok.shake ? (s.shakeSub ? sg(-s.shakeSub) : "0.00") : "n/a", proc.ok.shake],
+  ];
+  $("stepsRow").innerHTML = cells.map(c => `<div class="step${c[2] ? "" : " off"}"><span>${c[0]}</span><b>${c[1]}</b></div>`).join("")
+    + `<div class="step final"><span>Pattern</span><b>${f2(s.final)}</b></div>`;
+}
+document.addEventListener("calc:update", e => { lastCalc = e.detail; updatePage(e.detail); });
+
+// Copy + breakdown
+function fallbackCopy(text){
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.setAttribute("readonly", "");
+  ta.style.cssText = "position:fixed;left:-9999px;top:0";
+  document.body.appendChild(ta); ta.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch(e){}
+  ta.remove();
+  toast(ok ? "Result copied" : "Copy was blocked. Select the result and copy it by hand.");
+}
+$("copyBtn").addEventListener("click", async () => {
+  const s = lastCalc; if (!s) return;
+  const text = `${s.proc.name}, ${s.mat.name}: drawing ${f2(s.dim)} mm, pattern ${f2(s.final)} mm (shrinkage ${sg(s.shrinkAdd)}, machining ${sg(s.machAdd)}, distortion ${sg(s.distortAdd)}, shake ${sg(-s.shakeSub)})`;
+  try { await navigator.clipboard.writeText(text); toast("Result copied"); }
+  catch(e){ fallbackCopy(text); }
+});
+$("breakBtn").addEventListener("click", () => openSheet("dock"));
+
+// Load a setup into the calculator
+function clickSeg(id, v){
+  const b = document.querySelector(`#${id} button[data-v="${v}"]`);
+  if (b) b.click();
+}
+function loadSetup(s){
+  const pi = PROCESSES.findIndex(p => p.abbr === s.proc);
+  const mi = MATERIALS.findIndex(m => m.name === s.mat);
+  if (pi < 0 || mi < 0) return;
+  selectProcess(pi);
+  selectMaterial(mi);
+  $("baseDim").value = s.dim;
+  $("shape").value = String(s.shape);
+  clickSeg("surfaceSeg", s.surface);
+  clickSeg("moldingSeg", s.molding);
+  clickSeg("sizeSeg", s.size);
+  compute();
+  $("calculator").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block:"start" });
+  toast("Case loaded in the calculator");
+}
+
+// Worked example
+const CASE = { proc:"SAND", mat:"Cast Steel WCB", dim:400, surface:"top", shape:2.5, molding:"hand", size:"large" };
+function renderCase(){
+  const p = procBy(CASE.proc), m = matBy(CASE.mat);
+  const c = engine(p, m, CASE.dim, CASE.surface, CASE.shape, CASE.molding, CASE.size);
+  const rs = CASE.dim * 0.01, rm = 3, rule = CASE.dim + rs + rm;
+  $("cmpTable").querySelector("tbody").innerHTML = `
+    <tr><th scope="row">Drawing dimension</th><td>${f2(CASE.dim)}</td><td>${f2(CASE.dim)}</td></tr>
+    <tr><th scope="row">Shrinkage</th><td>${sg(rs)}</td><td>${sg(c.shrink)}</td></tr>
+    <tr><th scope="row">Machining</th><td>${sg(rm)}</td><td>${sg(c.mach)}</td></tr>
+    <tr><th scope="row">Distortion</th><td class="na">not applied</td><td>${sg(c.distort)}</td></tr>
+    <tr><th scope="row">Shake</th><td class="na">not applied</td><td>${sg(-c.shake)}</td></tr>
+    <tr class="total"><th scope="row">Pattern size</th><td>${f2(rule)}</td><td>${f2(c.final)}</td></tr>`;
+  const gap = c.final - rule, left = c.mach - gap, v = $("verdict");
+  if (gap <= 0){
+    v.className = "verdict ok";
+    v.innerHTML = `<strong>The rule is large enough here</strong>It gives ${f2(rule)} mm, at or above the calculator's ${f2(c.final)} mm.`;
+  } else if (left <= 0){
+    v.className = "verdict";
+    v.innerHTML = `<strong>The pattern is ${f2(gap)} mm too small</strong>The machining stock on this face is only ${f2(c.mach)} mm, so it is used up before the first cut and the casting is scrapped.`;
+  } else {
+    v.className = "verdict";
+    v.innerHTML = `<strong>The pattern is ${f2(gap)} mm too small</strong>Only about ${f2(left)} mm of the ${f2(c.mach)} mm machining stock would be left.`;
+  }
+}
+$("caseLoad").addEventListener("click", () => loadSetup(CASE));
+
+// Scroll reveal
+const rvEls = [...document.querySelectorAll(".rv")];
+if ("IntersectionObserver" in window){
+  const ro = new IntersectionObserver((entries, o) => entries.forEach(en => {
+    if (en.isIntersecting){ en.target.classList.add("in"); o.unobserve(en.target); }
+  }), { threshold: 0.12 });
+  rvEls.forEach(el => { if (el.getBoundingClientRect().top < window.innerHeight * 0.92) el.classList.add("in"); else ro.observe(el); });
+} else {
+  rvEls.forEach(el => el.classList.add("in"));
+}
+
+// ============================================================
+// Init
+// ============================================================
+$("processNote").textContent = PROCESSES[0].note;
+renderAuxList();
+compute();
+moveIndicator();
+renderCase();
+window.addEventListener("load", moveIndicator);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveIndicator);
+window.addEventListener("resize", moveIndicator);
+</script>
+
+<script>
+(function(){
+const g=id=>document.getElementById(id);
+function money(n){const c=g('roiCur').value;return c+Math.round(n).toLocaleString(c==='₹'?'en-IN':'en-US')}
+function calc(){
+ const u=+g('roiUnits').value||0,c=+g('roiCost').value||0,r=+g('roiRej').value,d=+g('roiDim').value,k=+g('roiCut').value,l=+g('roiLic').value||0;
+ g('vRej').textContent=r+'%';g('vDim').textContent=d+'%';g('vCut').textContent=k+'%';
+ const sn=u*r/100,sc=sn*c,svn=sn*d/100*k/100,sv=svn*c,net=sv-l;
+ g('oSave').textContent=money(sv);g('oNow').textContent=money(sc);
+ g('oN').textContent=Math.round(svn).toLocaleString();g('oNet').textContent=(net<0?'−':'')+money(Math.abs(net));
+ g('oX').textContent=l>0?(sv/l).toFixed(1)+'×':'–';
+ g('oPay').textContent=sv>0&&l>0?(l/sv*12<1?'<1':(l/sv*12).toFixed(1))+' mo':'–';
+ g('bAfter').style.width=(sc>0?(sc-sv)/sc*100:100)+'%';
+ g('tBefore').textContent='Scrap today '+money(sc);g('tAfter').textContent='With calculator '+money(sc-sv);
+}
+['roiCur','roiUnits','roiCost','roiLic','roiRej','roiDim','roiCut'].forEach(i=>g(i).addEventListener('input',calc));
+document.querySelectorAll('[data-rej]').forEach(b=>b.addEventListener('click',()=>{g('roiRej').value=b.dataset.rej;calc();g('roi').scrollIntoView({behavior:'smooth'})}));
+function setup(){const m=g('heroMeta'),d=g('heroDelta');if(m&&d)g('roiSetup').textContent='Live calculator setup: '+m.textContent+', pattern '+d.textContent.trim()+'.'}
+function shr(){const a=parseFloat(g('heroDrawing').textContent),b=parseFloat(g('heroPattern').textContent);if(!a||!b)return;const k=Math.max(.8,Math.min(1,a/b));g('shrk').style.setProperty('--k',k);g('shrk').style.setProperty('--ks',1-(1-k)*.55);g('shA').textContent=g('heroDrawing').textContent+' mm';g('shB').textContent=g('heroPattern').textContent+' mm'}
+shr();new MutationObserver(shr).observe(g('heroPattern'),{childList:true,characterData:true,subtree:true});
+let cBad=false,cN=0,cRej=0;function cUp(){const c=+g('roiCost').value||0;g('caN').textContent=cN;g('caScrap').textContent=money(cRej*c);g('caSave').textContent=money(cRej*c)}
+function cmp(){const a=parseFloat(g('heroDrawing').textContent),b=parseFloat(g('heroPattern').textContent);if(!a||!b)return;const r=a*1.01+3,e=(r-b)*a/b;cBad=Math.abs(e)>.5;g('caRule').textContent=r.toFixed(2)+' mm';g('caCalc').textContent=b.toFixed(2)+' mm';g('caErr').textContent=(e>0?'+':e<0?'−':'')+Math.abs(e).toFixed(2)+' mm '+(e>0?'oversize':e<0?'undersize':'off');g('caL').dataset.bad=cBad?1:0;g('caLv').textContent=cBad?'✕ REJECT':'✓ PASS';g('caL').style.setProperty('--w',1+(cBad?Math.sign(e)*Math.max(.14,Math.min(.3,Math.abs(e)/a*10)):e/a*3));g('caL').style.setProperty('--g',Math.abs(cBad?Math.max(.14,Math.min(.3,Math.abs(e)/a*10)):e/a*3));g('caL').dataset.over=e>0?1:0}
+cmp();new MutationObserver(cmp).observe(g('heroPattern'),{childList:true,characterData:true,subtree:true});
+g('caRp').addEventListener('animationiteration',()=>{cN++;if(cBad)cRej++;cUp()});['roiCost','roiCur'].forEach(i=>g(i).addEventListener('input',cUp));cUp();
+(function(){const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;let comps=[],dim=250,A=1,segs=[],chips=[],t0=performance.now();const T=11000,ease=x=>1-Math.pow(1-x,3),cl=x=>Math.max(0,Math.min(1,x)),fx=n=>(n>=0?'+':'−')+Math.abs(n).toFixed(2);
+function render(t){chips.forEach((c,i)=>c.style.opacity=cl((t-300-i*350)/300));let tot=dim;segs.forEach((sg,i)=>{const p=ease(cl((t-1800-i*1700)/1300));sg.style.width=(Math.abs(comps[i][1])/A*100*p)+'%';tot+=comps[i][1]*p;sg.firstChild.style.opacity=p>.6?1:0});g('abTot').textContent=tot.toFixed(2);const d=cl((t-(1800+comps.length*1700))/500);g('abDone').style.opacity=d;g('abTotW').classList.toggle('done',d>=1);g('abPt').style.width=Math.min(100,70*tot/dim)+'%'}
+function build(s){if(!s||!s.proc)return;dim=s.dim;comps=[['Shrinkage',s.shrinkAdd,'#e8590c'],['Machining',s.machAdd,'#f08c00'],['Distortion',s.proc.ok.distortion?s.distortAdd:0,'#7048e8'],['Shake',s.proc.ok.shake?-s.shakeSub:0,'#0c8599']].filter(c=>Math.abs(c[1])>1e-4);A=comps.reduce((a,c)=>a+Math.abs(c[1]),0)||1;g('abStack').innerHTML=comps.map(c=>'<div class="ab-seg" style="background:'+c[2]+'"><span>'+c[0]+' '+fx(c[1])+'</span></div>').join('');g('abLeg').innerHTML=comps.map(c=>'<span><i style="background:'+c[2]+'"></i>'+c[0]+'</span>').join('');g('abChips').innerHTML=[s.proc.name,s.mat.name,s.dim.toFixed(2)+' mm drawing'].map(x=>'<em>'+x+'</em>').join('');segs=[].slice.call(g('abStack').children);chips=[].slice.call(g('abChips').children);t0=performance.now();if(rm)render(T-500)}
+document.addEventListener('calc:update',e=>build(e.detail));if(typeof lastCalc!=='undefined')build(lastCalc);
+if(!rm){(function f(n){if(segs.length)render((n-t0)%T);requestAnimationFrame(f)})(performance.now())}})();
+(function(){const cv=g('fcv');if(!cv||!cv.getContext)return;const cx=cv.getContext('2d'),W=900,dpr=Math.min(2,window.devicePixelRatio||1),rm=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;cv.width=W*dpr;cv.height=360*dpr;cx.scale(dpr,dpr);
+let spd=1,paused=false,vis=true,last=performance.now(),acc=0,fc=0,C={},parts=[],floats=[],bad=true,wf=1;const L2=[{y:10,rule:1,n:0,rej:0,pass:0,items:[],sh:0},{y:188,rule:0,n:0,rej:0,pass:0,items:[],sh:0}];
+function sz(){const a=parseFloat(g('heroDrawing').textContent),b=parseFloat(g('heroPattern').textContent);if(!a||!b)return;const e=(a*1.01+3-b)*a/b;bad=Math.abs(e)>.5;wf=bad?1+Math.sign(e)*Math.max(.14,Math.min(.3,Math.abs(e)/a*10)):1+e/a*3}sz();new MutationObserver(sz).observe(g('heroPattern'),{childList:true,characterData:true,subtree:true});
+const money=n=>{const c=g('roiCur').value;return c+Math.round(n).toLocaleString(c==='₹'?'en-IN':'en-US')},cost=()=>+g('roiCost').value||0;
+function score(){const r=L2[0].rej*cost();g('fN').textContent=L2[0].n;g('fScrap').textContent=money(r);g('fOk').textContent=L2[1].pass;g('fSave').textContent=money(r)}
+['roiCost','roiCur'].forEach(i=>g(i).addEventListener('input',score));
+function burst(x,y,c,n){for(let i=0;i<n;i++){const a=Math.random()*6.283,s=40+Math.random()*120;parts.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,l:.7+Math.random()*.5,c:c,r:1.5+Math.random()*2})}}
+function step(dt){acc+=dt;if(acc>=1.15){acc-=1.15;L2.forEach(L=>{const b=L.rule&&bad;L.items.push({x:96,y:L.y+75,vx:0,vy:0,r:0,vr:0,st:0,g:0,bad:b,w:48*(b?wf:1),d:0})})}
+L2.forEach(L=>{L.items.forEach(it=>{if(it.st===0){it.x+=110*dt;if(!it.g&&it.x>=430){it.g=1;L.n++;score()}if(it.g&&it.x>=470){if(it.bad){it.st=1;it.vx=70;it.vy=-150;it.vr=(Math.random()+1)*4}else if(it.x>=800){it.st=3;L.pass++;burst(845,L.y+105,'#2b8a3e',14);floats.push({x:845,y:L.y+90,t:'✓ shipped',c:'#2b8a3e',l:1.2});score()}}}else if(it.st===1){it.vy+=620*dt;it.x+=it.vx*dt;it.y+=it.vy*dt;it.r+=it.vr*dt;if(it.y>=L.y+128){it.st=2;L.rej++;burst(it.x,it.y,'#e8590c',22);floats.push({x:it.x,y:it.y-20,t:'−'+money(cost()),c:'#d9480f',l:1.4});L.sh=.3;score()}}else if(it.st===2){it.d+=dt}});L.items=L.items.filter(it=>it.st!==3&&!(it.st===2&&it.d>1.2));if(L.sh>0)L.sh-=dt});
+parts.forEach(p=>{p.vy+=300*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.l-=dt});parts=parts.filter(p=>p.l>0);floats.forEach(f=>{f.y-=30*dt;f.l-=dt});floats=floats.filter(f=>f.l>0)}
+function draw(n){if(fc++%30===0){const s=getComputedStyle(document.documentElement),v=k=>s.getPropertyValue(k).trim();C={ink:v('--ink')||'#111',dim:v('--ink-dim')||'#777',rule:v('--rule')||'#ccc',s2:v('--surface-2')||'#eee',sf:v('--surface')||'#fff'}}
+cx.clearRect(0,0,W,360);L2.forEach(L=>{const y=L.y;cx.save();if(L.sh>0)cx.translate((Math.random()-.5)*5,0);cx.fillStyle=C.s2;cx.fillRect(0,y,W,168);cx.fillStyle=C.ink;cx.font='700 13px system-ui,sans-serif';cx.fillText(L.rule?'RULE OF THUMB  (+1% +3 mm)':'PATTERN ALLOWANCE CALCULATOR',14,y+20);
+cx.strokeStyle=C.dim;cx.lineWidth=1.5;cx.strokeRect(14,y+56,66,62);cx.fillStyle=C.ink;cx.font='600 10px ui-monospace,monospace';cx.fillText('PATTERN',20,y+74);cx.fillText('SHOP',20,y+87);cx.fillStyle=C.dim;cx.fillText(g(L.rule?'caRule':'caCalc').textContent,20,y+108);
+cx.strokeStyle=C.rule;cx.lineWidth=7;cx.beginPath();cx.moveTo(90,y+93);cx.lineTo(800,y+93);cx.stroke();cx.strokeStyle=C.dim;cx.lineWidth=1.5;cx.setLineDash([8,12]);cx.lineDashOffset=-((n/1000*110*spd)%20);cx.beginPath();cx.moveTo(90,y+93);cx.lineTo(800,y+93);cx.stroke();cx.setLineDash([]);
+cx.strokeStyle=C.ink;cx.lineWidth=2;cx.beginPath();cx.moveTo(404,y+90);cx.lineTo(404,y+36);cx.lineTo(456,y+36);cx.lineTo(456,y+90);cx.stroke();cx.fillStyle=C.ink;cx.font='700 10px ui-monospace,monospace';cx.fillText('GAUGE',408,y+30);cx.strokeStyle=C.dim;cx.setLineDash([3,3]);cx.lineWidth=1;cx.strokeRect(406,y+60,48,30);cx.setLineDash([]);
+cx.strokeStyle=C.ink;cx.lineWidth=2;cx.beginPath();cx.moveTo(500,y+112);cx.lineTo(508,y+160);cx.lineTo(592,y+160);cx.lineTo(600,y+112);cx.stroke();cx.fillStyle=C.dim;cx.font='600 10px ui-monospace,monospace';cx.fillText(L.rule?'SCRAP':'SCRAP: 0',L.rule?536:526,y+108);cx.fillStyle='#d9480f';for(let k=0;k<Math.min(L.rej,12);k++)cx.fillRect(512+(k%6)*13,y+150-Math.floor(k/6)*11,11,9);
+cx.strokeStyle=C.ink;cx.strokeRect(808,y+104,74,56);cx.fillStyle=C.dim;cx.fillText('SHIP',832,y+100);cx.fillStyle='#2b8a3e';for(let k=0;k<Math.min(L.pass,9);k++)cx.fillRect(814+(k%3)*22,y+148-Math.floor(k/3)*16,19,13);
+L.items.forEach(it=>{const h=Math.max(0,Math.min(1,1-(it.x-96)/330)),r=Math.round(138+102*h),gg=Math.round(143-3*h),b=Math.round(152-152*h);cx.save();cx.translate(it.x,it.y);cx.rotate(it.r);cx.fillStyle=it.g?(it.bad?'#e8590c':'#2b8a3e'):'rgb('+r+','+gg+','+b+')';cx.fillRect(-it.w/2,-15,it.w,30);cx.fillRect(-it.w/2-4,-15,4,30);cx.fillRect(it.w/2,-15,4,30);cx.restore();if(it.st===0&&Math.abs(it.x-430)<24){cx.strokeStyle=C.ink;cx.lineWidth=2;cx.beginPath();cx.moveTo(it.x,y+38);cx.lineTo(it.x,y+90);cx.stroke()}if(it.g&&it.st===0&&it.x<470){cx.strokeStyle=it.bad?'#d9480f':'#2b8a3e';cx.lineWidth=3;cx.strokeRect(it.x-it.w/2-6,it.y-19,it.w+12,38)}});cx.restore()});
+parts.forEach(p=>{cx.globalAlpha=Math.max(0,p.l);cx.fillStyle=p.c;cx.beginPath();cx.arc(p.x,p.y,p.r,0,6.283);cx.fill()});cx.globalAlpha=1;floats.forEach(f=>{cx.globalAlpha=Math.min(1,f.l);cx.fillStyle=f.c;cx.font='700 15px ui-monospace,monospace';cx.fillText(f.t,f.x-24,f.y)});cx.globalAlpha=1}
+document.querySelectorAll('.fb[data-s]').forEach(b=>b.addEventListener('click',()=>{spd=+b.dataset.s;document.querySelectorAll('.fb[data-s]').forEach(x=>x.setAttribute('aria-pressed',x===b))}));g('fPause').addEventListener('click',e=>{paused=!paused;e.target.setAttribute('aria-pressed',paused);e.target.textContent=paused?'Resume':'Pause'});
+if('IntersectionObserver' in window)new IntersectionObserver(e=>{vis=e[0].isIntersecting}).observe(cv);score();
+if(rm){for(let i=0;i<900;i++)step(.02);draw(0)}else{(function f(n){const dt=Math.min(.05,(n-last)/1000);last=n;if(vis){if(!paused){let d=dt*spd;while(d>0){const s=Math.min(d,.02);step(s);d-=s}}draw(n)}requestAnimationFrame(f)})(last)}})();
+(function(){let v=.1,csv='';const q=id=>document.getElementById(id),sg=n=>(n>=0?'+':'−')+Math.abs(n).toFixed(2);
+function pat(d,f){const proc=PROCESSES[state.processIdx],mat=MATERIALS[state.materialIdx];return engine(proc,Object.assign({},mat,{shrink:mat.shrink*f}),d,state.surface,parseFloat(document.getElementById('shape').value)||0,state.molding,state.size)}
+function batch(){try{const u=+q('tkU').value,dp=u===1?2:3,vals=q('tkIn').value.split(/[\s,;]+/).map(Number).filter(x=>isFinite(x)&&x>0).slice(0,50),H=['Drawing','Shrink','Machining','Distort','Shake','Pattern','Change %'];const rows=vals.map(x=>{const mm=x*u,r=pat(mm,1);return [x,r.shrink/u,r.mach/u,r.distort/u,-r.shake/u,r.final/u,(r.final/mm-1)*100]});q('tkT').innerHTML='<tr>'+H.map(h=>'<th>'+h+'</th>').join('')+'</tr>'+(rows.length?rows.map(r=>'<tr><td>'+r[0].toFixed(dp)+'</td>'+r.slice(1,5).map(n=>'<td>'+(n>=0?'+':'−')+Math.abs(n).toFixed(dp)+'</td>').join('')+'<td>'+r[5].toFixed(dp)+'</td><td>'+r[6].toFixed(1)+'%</td></tr>').join(''):'<tr><td colspan="7">Enter at least one positive dimension.</td></tr>');csv=H.map((h,i)=>i&&i<6||!i?h+' ('+(u===1?'mm':'in')+')':h).join(',')+'\n'+rows.map(r=>r.map((n,i)=>n.toFixed(i===6?1:dp+(u===1?0:0))).join(',')).join('\n')}catch(e){}}
+function rng(){try{const s=typeof lastCalc!=='undefined'&&lastCalc;if(!s)return;const lo=pat(s.dim,1-v).final,hi=pat(s.dim,1+v).final,nom=s.final,p=hi>lo?(nom-lo)/(hi-lo)*100:50;q('tkLo').textContent=lo.toFixed(2);q('tkHi').textContent=hi.toFixed(2);q('tkNom').textContent=nom.toFixed(2)+' mm';q('tkM').style.left=Math.max(0,Math.min(100,p))+'%';q('tkV').textContent='±'+Math.round(v*100)+'%';q('heroRange').textContent=v>0?'Likely range '+lo.toFixed(2)+' to '+hi.toFixed(2)+' mm (shrinkage ±'+Math.round(v*100)+'%)':''}catch(e){}}
+function rule(){try{const s=typeof lastCalc!=='undefined'&&lastCalc;if(!s)return;const r=s.dim*1.01+3,gap=s.final-r;q('tkRuleV').textContent=(gap>0.005?'':gap<-0.005?'':'')+(gap>0.005?sg(gap)+' mm short':gap<-0.005?sg(-gap).replace('+','')+' mm spare':'matches');q('tkRuleV').style.color=gap>.5?'#d9480f':'#2b8a3e';q('tkRuleT').textContent='The shortcut gives '+r.toFixed(2)+' mm; the calculator gives '+s.final.toFixed(2)+' mm. '+(gap>.5?'The shortcut would leave the casting undersized.':gap<-.5?'The shortcut oversizes the pattern, wasting metal and machining time.':'Here the shortcut is close enough.')}catch(e){}}
+function all(){batch();rng();rule()}
+document.addEventListener('calc:update',all);['tkU','tkIn'].forEach(i=>q(i).addEventListener('input',batch));q('tkR').addEventListener('input',e=>{v=+e.target.value/100;rng()});
+q('tkCopy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(csv);toast('CSV copied')}catch(e){try{fallbackCopy(csv)}catch(x){}}});all();})();
+setup();const mo=new MutationObserver(setup);['heroMeta','heroDelta'].forEach(i=>mo.observe(g(i),{childList:true,characterData:true,subtree:true}));
+calc();
+})();
+</script>
+</body></html>
